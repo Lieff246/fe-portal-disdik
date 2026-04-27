@@ -1,0 +1,154 @@
+import React from 'react';
+import { User, Target, ShieldCheck, Zap, BarChart3, GraduationCap, Award, HeartHandshake } from 'lucide-react';
+
+export const AboutSection: React.FC = () => {
+  return (
+    <section className="py-24 px-10 bg-white relative overflow-hidden">
+      <div className="container mx-auto">
+        
+        {/* Leadership & Purpose Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-center mb-32">
+          
+          {/* Leadership Profile */}
+          <div className="lg:col-span-5 relative">
+            <div className="relative z-10 bg-forest rounded-[40px] overflow-hidden shadow-2xl group">
+              <div className="aspect-[4/5] bg-forest-light/20 relative">
+                {/* Placeholder for actual image if available, using a premium looking div for now */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <User className="w-32 h-32 text-forest-light/30" />
+                </div>
+                <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-forest to-transparent pt-20">
+                  <h3 className="text-2xl font-bold text-white mb-1">Moh. Fathul Bahri S.Kom</h3>
+                  <p className="text-forest-light font-medium tracking-wide uppercase text-xs">Kepala Dinas Pendidikan Provinsi Sulawesi Tengah</p>
+                </div>
+              </div>
+            </div>
+            {/* Decorative elements */}
+            <div className="absolute -top-6 -right-6 w-32 h-32 bg-forest/5 rounded-full blur-3xl"></div>
+            <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-forest/5 rounded-full blur-3xl"></div>
+          </div>
+
+          {/* Purpose & Mission */}
+          <div className="lg:col-span-7">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-forest/5 rounded-full text-forest font-bold text-xs uppercase tracking-widest mb-6">
+              <Target className="w-4 h-4" />
+              <span>Visi & Misi Inovasi</span>
+            </div>
+            <h2 className="text-4xl lg:text-5xl font-black text-forest leading-tight mb-8">
+              Satu <span className="text-forest-light">Data</span> Pendidikan:<br/>
+              Melayani dengan Sepenuh Hati
+            </h2>
+            <div className="space-y-6 text-gray-600 text-lg leading-relaxed">
+              <p>
+                Sistem PUSDAPENDIK hadir untuk merevolusi tata kelola administrasi kepegawaian di lingkungan Dinas Pendidikan 
+                Provinsi Sulawesi Tengah. Kami menyadari bahwa tantangan terbesar guru saat ini adalah beban administrasi 
+                yang seringkali menyita waktu berharga untuk mengajar.
+              </p>
+              <p className="font-semibold text-forest italic border-l-4 border-forest-light pl-6">
+                "Tujuan utama kami adalah meningkatkan pelayanan sehingga guru tidak perlu khawatir lagi terhadap administrasinya. 
+                Guru fokus mengajar, biar Dinas yang mengurus administrasinya. Dinas yang jemput, Dinas yang hadir, dan 
+                semuanya bebas pungli."
+              </p>
+              <div className="grid grid-cols-2 gap-4 mt-8">
+                <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                  <ShieldCheck className="w-6 h-6 text-green-600 shrink-0" />
+                  <div>
+                    <h4 className="font-bold text-forest text-sm">Bebas Pungli</h4>
+                    <p className="text-xs text-gray-500">Transparansi penuh dalam setiap proses layanan.</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                  <Zap className="w-6 h-6 text-amber-500 shrink-0" />
+                  <div>
+                    <h4 className="font-bold text-forest text-sm">Pelayanan Real-time</h4>
+                    <p className="text-xs text-gray-500">Proses cepat tanpa harus meninggalkan sekolah.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Benefits Grid */}
+        <div className="relative">
+          <div className="text-center mb-16">
+            <h3 className="text-3xl font-black text-forest mb-4">Manfaat Sistem Terpadu</h3>
+            <p className="text-gray-500 max-w-2xl mx-auto">Transformasi digital yang memberikan dampak nyata bagi ekosistem pendidikan di Sulawesi Tengah.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Short Term */}
+            <div className="bg-beige/30 p-8 rounded-[40px] border border-beige hover:shadow-xl transition-all duration-500 group">
+              <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-forest shadow-sm mb-6 group-hover:scale-110 transition-transform">
+                <BarChart3 className="w-8 h-8" />
+              </div>
+              <h4 className="text-xl font-bold text-forest mb-4">Jangka Pendek</h4>
+              <ul className="space-y-3 text-sm text-gray-600">
+                <li className="flex gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-forest-light mt-1.5 shrink-0"></div>
+                  <span>Peningkatan efisiensi pengelolaan data guru.</span>
+                </li>
+                <li className="flex gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-forest-light mt-1.5 shrink-0"></div>
+                  <span>Pemetaan distribusi guru berbasis mata pelajaran.</span>
+                </li>
+                <li className="flex gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-forest-light mt-1.5 shrink-0"></div>
+                  <span>Monitoring evaluasi data guru secara real-time.</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Medium Term */}
+            <div className="bg-forest p-8 rounded-[40px] shadow-2xl hover:shadow-forest/20 transition-all duration-500 group relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-4 opacity-5">
+                <Award className="w-32 h-32" />
+              </div>
+              <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center text-white shadow-sm mb-6 group-hover:scale-110 transition-transform">
+                <GraduationCap className="w-8 h-8" />
+              </div>
+              <h4 className="text-xl font-bold text-white mb-4">Jangka Menengah</h4>
+              <ul className="space-y-3 text-sm text-forest-light">
+                <li className="flex gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-white mt-1.5 shrink-0"></div>
+                  <span>Rancangan pelatihan guru yang lebih tepat sasaran.</span>
+                </li>
+                <li className="flex gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-white mt-1.5 shrink-0"></div>
+                  <span>Optimalisasi kinerja mengajar dengan pengurangan beban admin.</span>
+                </li>
+                <li className="flex gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-white mt-1.5 shrink-0"></div>
+                  <span>Kesadaran pengelolaan data mandiri yang terintegrasi.</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Long Term */}
+            <div className="bg-beige/30 p-8 rounded-[40px] border border-beige hover:shadow-xl transition-all duration-500 group">
+              <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-forest shadow-sm mb-6 group-hover:scale-110 transition-transform">
+                <HeartHandshake className="w-8 h-8" />
+              </div>
+              <h4 className="text-xl font-bold text-forest mb-4">Jangka Panjang</h4>
+              <ul className="space-y-3 text-sm text-gray-600">
+                <li className="flex gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-forest-light mt-1.5 shrink-0"></div>
+                  <span>Transformasi signifikan dunia pendidikan Sulawesi Tengah.</span>
+                </li>
+                <li className="flex gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-forest-light mt-1.5 shrink-0"></div>
+                  <span>Kebijakan strategis berbasis data yang akurat.</span>
+                </li>
+                <li className="flex gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-forest-light mt-1.5 shrink-0"></div>
+                  <span>Mewujudkan visi Gubernur dalam reformasi pendidikan.</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  );
+};

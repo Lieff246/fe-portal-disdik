@@ -1,0 +1,184 @@
+import React, { useState } from 'react';
+import { SulawesiMap } from '../Fragments/SulawesiMap';
+import { Header } from '../Fragments/Header';
+import { Users, TrendingUp, Activity, Target, MapPin, ExternalLink } from 'lucide-react';
+import { type CabangConfig, CABANG_DATA } from '@/types';
+import { timeAgo } from '@/utils/timeFormat';
+
+interface HeroProps {
+  cabangConfig?: CabangConfig;
+  onOpenTracking?: () => void;
+  landingData?: any;
+}
+
+export const HeroSection: React.FC<HeroProps> = ({ cabangConfig, onOpenTracking, landingData }) => {
+  const [timeframe, setTimeframe] = useState<'Bulan' | 'Tahun'>('Tahun');
+
+  const projections = landingData?.projections || {
+    purnaTugas: { yearly: 0, monthly: 0 },
+    kontrakHabis: { yearly: 0, monthly: 0 },
+    berkala: { yearly: 0 },
+    pangkat: { yearly: 0 },
+  };
+
+  const activityLog = landingData?.activityLog || [
+    { name: 'Data masukan sedang dalam sinkronisasi...', timestamp: Date.now() },
+  ];
+
+  const cabdisData = landingData?.cabdisDistribution || CABANG_DATA;
+
+  const getProjectionValue = (type: keyof typeof projections) => {
+    if (type === 'berkala' || type === 'pangkat') {
+      return (projections[type] as any)?.yearly || 0;
+    }
+    const data = projections[type] as any;
+    return timeframe === 'Bulan' ? (data?.monthly || 0) : (data?.yearly || 0);
+  };
+
+  return (
+    <section className="relative w-full h-[100vh] min-h-[700px] bg-beige overflow-hidden rounded-b-[40px] shadow-sm flex flex-col justify-center">
+      <Header cabangConfig={cabangConfig} onOpenTracking={onOpenTracking} />
+
+      {/* Background Map Container */}
+      <div className="absolute inset-0 z-0">
+        <SulawesiMap cabangConfig={cabangConfig} />
+      </div>
+
+      <div className="container mx-auto px-10 relative z-10 flex justify-between items-center w-full h-[60vh] mt-10">
+
+        {/* LEFT COLUMN: KPI & Distribution */}
+        <div className="flex flex-col gap-6 w-96">
+          <div className="glass-card group w-full">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 rounded-2xl bg-forest/10 flex items-center justify-center text-forest group-hover:scale-110 transition-transform duration-300">
+                <Users className="w-6 h-6" />
+              </div>
+              <span className="flex items-center gap-1 text-sm font-bold text-green-600 bg-green-100 px-2 py-1 rounded-full">
+                <TrendingUp className="w-3 h-3" /> +{(Math.random() * 5).toFixed(1)}%
+              </span>
+            </div>
+            <h3 className="text-sm font-semibold text-gray-700 mb-1">Total Pegawai (ASN)</h3>
+            <p className="text-4xl font-extrabold text-forest tracking-tight">
+              {cabangConfig ? cabangConfig.totalPegawai.toLocaleString() : (landingData?.summary?.totalPegawai?.toLocaleString() || '14,285')}
+            </p>
+            <p className="text-xs text-gray-500 mt-2">
+              {cabangConfig ? `Wilayah: ${cabangConfig.kabKotas.join(', ')}` : 'Seluruh wilayah Sulawesi Tengah'}
+            </p>
+          </div>
+
+          {!cabangConfig && (
+            <div className="glass-card !p-5 w-full flex-1 overflow-y-auto max-h-[45vh] custom-scrollbar">
+              <div className="flex items-center gap-2 mb-4">
+                <MapPin className="w-5 h-5 text-forest" />
+                <h3 className="font-bold text-forest">Distribusi Wilayah Kerja</h3>
+              </div>
+
+              <div className="space-y-3">
+                {cabdisData.map((cabang: any, idx: number) => (
+                  <div key={idx} className="bg-white/50 p-3 rounded-xl border border-white flex justify-between items-center">
+                    <div>
+                      <h4 className="font-bold text-sm text-forest leading-tight">{cabang.name}</h4>
+                      <p className="text-[10px] text-forest-light truncate max-w-[150px]">Layanan Aktif di Wilayah</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-forest bg-forest/10 px-2 py-1 rounded-md">
+                        {cabang.total?.toLocaleString() || '0'}
+                      </span>
+                      <a
+                        href={`/cabang/${cabang.id || idx}`}
+                        className="p-1 bg-forest/5 text-forest rounded hover:bg-forest hover:text-white transition-colors"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* RIGHT COLUMN: Progress & Activity */}
+        <div className="flex flex-col gap-6 w-96">
+          <div className="glass-card !p-5">
+            <div className="flex justify-between items-center mb-4">
+              <div className="flex items-center gap-2">
+                <Target className="w-5 h-5 text-forest" />
+                <h3 className="font-bold text-forest uppercase text-[10px] tracking-widest">Proyeksi Pegawai {timeframe}</h3>
+              </div>
+              <div className="bg-gray-200/50 p-1 rounded-lg flex text-[10px] font-bold">
+                <button
+                  onClick={() => setTimeframe('Bulan')}
+                  className={`px-3 py-1 rounded-md transition-colors ${timeframe === 'Bulan' ? 'bg-white text-forest shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                >
+                  Bulan
+                </button>
+                <button
+                  onClick={() => setTimeframe('Tahun')}
+                  className={`px-3 py-1 rounded-md transition-colors ${timeframe === 'Tahun' ? 'bg-white text-forest shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                >
+                  Tahun
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="bg-white/30 p-3 rounded-xl border border-white/50">
+                <div className="flex justify-between text-[10px] font-black uppercase text-gray-500 mb-2">
+                  <span>Purna Tugas (PNS)</span>
+                  <span className="text-forest font-bold">{getProjectionValue('purnaTugas')} Org</span>
+                </div>
+                <div className="w-full bg-forest/5 rounded-full h-1.5 overflow-hidden">
+                  <div className="bg-rose-500 h-full transition-all duration-1000" style={{ width: `${Math.min(100, (getProjectionValue('purnaTugas') / 50) * 100)}%` }}></div>
+                </div>
+              </div>
+
+              <div className="bg-white/30 p-3 rounded-xl border border-white/50">
+                <div className="flex justify-between text-[10px] font-black uppercase text-gray-500 mb-2">
+                  <span>Habis Kontrak (PPPK)</span>
+                  <span className="text-forest font-bold">{getProjectionValue('kontrakHabis')} Org</span>
+                </div>
+                <div className="w-full bg-forest/5 rounded-full h-1.5 overflow-hidden">
+                  <div className="bg-orange-500 h-full transition-all duration-1000" style={{ width: `${Math.min(100, (getProjectionValue('kontrakHabis') / 50) * 100)}%` }}></div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-white/30 p-3 rounded-xl border border-white/50">
+                  <p className="text-[9px] font-bold text-gray-500 uppercase mb-1">Pangkat</p>
+                  <p className="text-xl font-black text-forest">{getProjectionValue('pangkat')}</p>
+                  <p className="text-[8px] text-gray-400">Tahun {new Date().getFullYear()}</p>
+                </div>
+                <div className="bg-white/30 p-3 rounded-xl border border-white/50">
+                  <p className="text-[9px] font-bold text-gray-500 uppercase mb-1">Berkala</p>
+                  <p className="text-xl font-black text-forest">{getProjectionValue('berkala')}</p>
+                  <p className="text-[8px] text-gray-400">Tahun {new Date().getFullYear()}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="glass-card !p-5 flex-1 overflow-y-auto max-h-[45vh] custom-scrollbar">
+            <div className="flex items-center gap-2 mb-4">
+              <Activity className="w-5 h-5 text-forest" />
+              <h3 className="font-bold text-forest uppercase text-[10px] tracking-widest">Aktivitas Terbaru</h3>
+            </div>
+
+            <div className="space-y-4">
+              {activityLog.map((item: any, idx: any) => (
+                <div key={idx} className="bg-white/40 p-4 rounded-2xl border border-white hover:border-forest/20 transition-all group">
+                  <p className="text-xs font-bold text-forest leading-tight mb-2 group-hover:text-forest-dark">{item.name}</p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9px] font-black uppercase text-forest-light tracking-widest">{timeAgo(item.timestamp)}</span>
+                    <span className="text-[9px] font-bold text-forest/40 italic">{item.user_name || 'System'}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  );
+};
