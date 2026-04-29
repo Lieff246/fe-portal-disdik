@@ -15,17 +15,19 @@ export const Home = () => {
 
   const [portalData, setPortalData] = useState<any>(null);
   const [initialProjections, setInitialProjections] = useState<any>(null);
-
+  console.log(initialProjections);
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [summary, projections, cards, gtkStats, neraca] = await Promise.all([
-        PortalService.getSummary(),
-        PortalService.getProjections(), // Initial request for projections (Yearly/Current)
-        PortalService.getPortalCards(),
-        PortalService.getGtkStats(),
-        PortalService.getNeraca(),
-      ]);
+      const [summary, projections, cards, gtkStats, neraca] = await Promise.all(
+        [
+          PortalService.getSummary(),
+          PortalService.getProjections(), // Initial request for projections (Yearly/Current)
+          PortalService.getPortalCards(),
+          PortalService.getGtkStats(),
+          PortalService.getNeraca(),
+        ],
+      );
 
       setPortalData({
         summary,
@@ -44,34 +46,37 @@ export const Home = () => {
 
   const [proyeksiLoading, setProyeksiLoading] = useState(false);
 
-  const handleProyeksiFilterChange = useCallback(async (range: "monthly" | "yearly", month?: number) => {
-    setProyeksiLoading(true);
-    try {
-      const year = 2026;
-      let params: any = { range };
-      
-      if (range === "monthly") {
-        const monthStr = month && month < 10 ? `0${month}` : `${month}`;
-        params.month = `${year}-${monthStr}`;
-      } else {
-        params.month = `${year}-01`;
-      }
+  const handleProyeksiFilterChange = useCallback(
+    async (range: "monthly" | "yearly", month?: number) => {
+      setProyeksiLoading(true);
+      try {
+        const year = 2026;
+        let params: any = { range };
 
-      const res = await PortalService.getProjections(params);
-      
-      setPortalData((prev: any) => ({
-        ...prev,
-        projections: {
-          ...prev.projections,
-          [range]: res
+        if (range === "monthly") {
+          const monthStr = month && month < 10 ? `0${month}` : `${month}`;
+          params.month = `${year}-${monthStr}`;
+        } else {
+          params.month = `${year}-01`;
         }
-      }));
-    } catch (error) {
-      console.error("Failed to fetch projections:", error);
-    } finally {
-      setProyeksiLoading(false);
-    }
-  }, []);
+
+        const res = await PortalService.getProjections(params);
+
+        setPortalData((prev: any) => ({
+          ...prev,
+          projections: {
+            ...prev.projections,
+            [range]: res,
+          },
+        }));
+      } catch (error) {
+        console.error("Failed to fetch projections:", error);
+      } finally {
+        setProyeksiLoading(false);
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     fetchData();

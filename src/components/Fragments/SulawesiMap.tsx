@@ -9,21 +9,42 @@ interface MapProps {
   markers?: any[]; // Cabdis stats
   kabupatenStats?: any[];
   onViewDetail?: (marker: any) => void;
+  layer?: "base" | "interactive";
 }
 
 // --- COLOR SCALE (Tailwind Reds) ---
 const RANK_COLORS = [
-  "#7f1d1d", // Red 900 (Highest Priority)
-  "#991b1b", // Red 800
-  "#b91c1c", // Red 700
-  "#dc2626", // Red 600
-  "#ef4444", // Red 500
-  "#f87171", // Red 400
+  "#2563eb",
+  "#2563eb",
+  "#2563eb",
+  "#2563eb",
+  "#2563eb",
+  "#2563eb",
+
+  // "#7f1d1d", // Red 900 (Highest Priority)
+  // "#991b1b", // Red 800
+  // "#b91c1c", // Red 700
+  // "#dc2626", // Red 600
+  // "#ef4444", // Red 500
+  // "#f87171", // Red 400
 ];
+
+const thisToRoman = (num: any) => {
+  const map: Record<string, string> = {
+    1: "I",
+    2: "II",
+    3: "III",
+    4: "IV",
+    5: "V",
+    6: "VI",
+  };
+  return map[num] || num;
+};
 
 export const SulawesiMap: React.FC<MapProps> = ({
   markers = [],
   onViewDetail,
+  layer = "base",
 }) => {
   const [cabdisGeoData, setCabdisGeoData] = useState<Record<number, any>>({});
   const [hoveredCabdis, setHoveredCabdis] = useState<string | null>(null);
@@ -45,12 +66,12 @@ export const SulawesiMap: React.FC<MapProps> = ({
   }, []);
 
   const cabdisRanks = useMemo(() => {
-    const sorted = [...markers].sort(
+    const sorted = [...(markers || [])].sort(
       (a, b) => (b.stats?.kekurangan || 0) - (a.stats?.kekurangan || 0),
     );
     const ranks: Record<string, number> = {};
     sorted.forEach((item, index) => {
-      ranks[item.name.toUpperCase()] = index;
+      ranks[item.name?.toUpperCase()] = index;
     });
     return ranks;
   }, [markers]);
@@ -80,7 +101,7 @@ export const SulawesiMap: React.FC<MapProps> = ({
     const baseColor =
       rank !== undefined
         ? RANK_COLORS[rank] || RANK_COLORS[RANK_COLORS.length - 1]
-        : "#cbd5e1";
+        : "#dc2626";
 
     return {
       color: "#ffffff",
@@ -125,7 +146,7 @@ export const SulawesiMap: React.FC<MapProps> = ({
         <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-tight">${cabdisData.name}</p>
         <h5 class="text-sm font-black text-slate-800">${regencyName}</h5>
         <div class="mt-2 pt-2 border-t border-slate-100 flex items-center gap-2">
-          <span class="text-[10px] font-black text-rose-500">Kekurangan: ${cabdisData.stats.kekurangan}</span>
+          <span class="text-[10px] font-black text-rose-500">Kekurangan: ${cabdisData.stats?.kekurangan || 0}</span>
           <div class="w-1 h-1 bg-slate-200 rounded-full"></div>
           <span class="text-[10px] font-black text-slate-400">Klik Detail</span>
         </div>
@@ -138,7 +159,7 @@ export const SulawesiMap: React.FC<MapProps> = ({
   return (
     <div className="absolute inset-0 w-full h-full overflow-hidden bg-transparent">
       <MapContainer
-        center={[-1.4, 121.0]}
+        center={[-4.1, 121.0]}
         zoom={7.2}
         zoomControl={false}
         dragging={false}
@@ -148,27 +169,40 @@ export const SulawesiMap: React.FC<MapProps> = ({
         attributionControl={false}
         style={{ width: "100%", height: "100%", background: "transparent" }}
       >
-        <GeoJSON data={indonesiaGeoData as any} style={baseStyle} />
+        {layer === "base" && (
+          <GeoJSON
+            data={indonesiaGeoData as any}
+            style={baseStyle}
+            interactive={false}
+          />
+        )}
 
-        {Object.entries(cabdisGeoData).map(([num, geo]) => {
-          const cabdisName = `CABANG DINAS WILAYAH ${num}`;
-          const cabdisData = markers.find(
-            (m) => m.name.toUpperCase() === cabdisName,
-          );
+        {layer === "interactive" &&
+          Object.entries(cabdisGeoData).map(([num, geo]) => {
+            const cabdisName = `CABANG DINAS WILAYAH ${num}`;
+            const cabdisData = (markers || []).find(
+              (m) =>
+                m.name?.toUpperCase() === cabdisName ||
+                m.name?.toUpperCase().includes(`WILAYAH ${num}`) ||
+                m.name?.toUpperCase().includes(`WILAYAH ${thisToRoman(num)}`),
+            );
 
-          return (
-            <GeoJSON
-              key={`cabdis-${num}-${markers.length}-${hoveredCabdis === cabdisName}`}
-              data={geo}
-              style={() => getCabdisStyle(cabdisName)}
-              onEachFeature={(f, l) => onEachFeature(f, l, cabdisData)}
-            />
-          );
-        })}
+            return (
+              <GeoJSON
+                key={`cabdis-${num}-${(markers || []).length}-${hoveredCabdis === cabdisName}`}
+                data={geo}
+                style={() => getCabdisStyle(cabdisName)}
+                onEachFeature={(f, l) => onEachFeature(f, l, cabdisData)}
+              />
+            );
+          })}
       </MapContainer>
 
       <style>{`
-        .leaflet-container { background: transparent !important; }
+        .leaflet-container { 
+          background: transparent !important; 
+          pointer-events: ${layer === "interactive" ? "none" : "auto"} !important;
+        }
         .custom-map-tooltip {
           background: transparent !important;
           border: none !important;
@@ -177,6 +211,7 @@ export const SulawesiMap: React.FC<MapProps> = ({
         }
         .custom-map-tooltip::before { display: none !important; }
         .leaflet-interactive { 
+          pointer-events: auto !important;
           cursor: pointer !important; 
           transition: fill-opacity 0.3s, stroke-width 0.3s !important;
         }

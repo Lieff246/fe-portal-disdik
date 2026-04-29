@@ -7,6 +7,7 @@ interface ProyeksiCardProps {
   onFilterChange?: (range: "monthly" | "yearly", month?: number) => void;
   // Support string format for chevron navigation too
   onMonthNav?: (newMonth: string) => void;
+  onOpenDetail?: (category: string) => void;
   isLoading?: boolean;
 }
 
@@ -14,13 +15,15 @@ export const ProyeksiCard: React.FC<ProyeksiCardProps> = ({
   projections,
   onFilterChange,
   onMonthNav,
+  onOpenDetail,
   isLoading,
 }) => {
   const [activeRange, setActiveRange] = useState<"monthly" | "yearly">(
     "monthly",
   );
+  console.log(onMonthNav);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
-  const currentYear = 2026;
+  // const currentYear = 2026;
 
   const months = [
     "Januari",
@@ -47,17 +50,17 @@ export const ProyeksiCard: React.FC<ProyeksiCardProps> = ({
     (acc: number, curr: any) => acc + (curr.real_count || 0),
     0,
   ) as number;
-  const totalOverdue = Object.values(currentData).reduce(
-    (acc: number, curr: any) => acc + (curr.overdue_count || 0),
-    0,
-  ) as number;
+  // const totalOverdue = Object.values(currentData).reduce(
+  //   (acc: number, curr: any) => acc + (curr.overdue_count || 0),
+  //   0,
+  // ) as number;
 
-  const totalBelumSubmit = Math.max(0, totalTarget - totalReal - totalOverdue);
+  const totalBelumSubmit = Math.max(0, totalTarget - totalReal);
 
   const chartData = [
     { name: "Sudah Submit", value: totalReal },
     { name: "Belum Submit", value: totalBelumSubmit },
-    { name: "Terlewat", value: totalOverdue },
+    // { name: "Terlewat", value: totalOverdue },
   ];
 
   const categories = [
@@ -244,33 +247,37 @@ export const ProyeksiCard: React.FC<ProyeksiCardProps> = ({
               : 0;
 
           return (
-            <div key={idx} className="flex flex-col gap-3">
-              <div className="flex items-center justify-between w-full">
-                <div>
+            <div
+              key={idx}
+              className="flex flex-col gap-2 cursor-pointer group"
+              onClick={() => onOpenDetail?.(cat.id)}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
                   <div
-                    className={`w-10 h-10 rounded-xl ${cat.iconBg} ${cat.iconColor} flex items-center justify-center`}
+                    className={`w-11 h-11 rounded-full ${cat.iconBg} ${cat.iconColor} flex items-center justify-center group-hover:scale-110 transition-transform`}
                   >
                     {cat.icon}
                   </div>
                 </div>
-
-                <div className="w-full ml-4">
-                  <div className="flex w-full justify-between">
-                    <span className="font-medium text-sm mb-2">{cat.label}</span>
-                    <div className="flex items-baseline gap-1 text-sm">
-                      <span className="font-bold">{data.real_count}</span>
-                      <span className="text-sm">/{data.target_count}</span>
-                      {data.overdue_count > 0 && (
-                        <span className=" text-rose-500 ml-0.5">
+                <div className="w-full pl-2">
+                  <div className="flex items-center justify-between">
+                    <div className="font-medium mb-1.5 text-sm text-slate-700 group-hover:text-blue-600 transition-colors">
+                      {cat.label}
+                    </div>
+                    <div className="flex items-baseline gap-1 text-sm mb-1">
+                      <div className="font-bold">{data.real_count}</div>
+                      <div>/{data.target_count}</div>
+                      {/* {data.overdue_count > 0 && (
+                        <div className="text-rose-500 ml-0.5">
                           ({data.overdue_count}!)
-                        </span>
-                      )}
+                        </div>
+                      )} */}
                     </div>
                   </div>
-
-                  <div className="w-full h-2 bg-[#CBD5E1] rounded-full overflow-hidden">
+                  <div className="w-full h-2 bg-[#CBD5E1] overflow-hidden">
                     <div
-                      className={`h-full bg-[#84cc16] transition-all duration-1000 ease-out rounded-full`}
+                      className={`h-full bg-[#84cc16] transition-all duration-1000 ease-out`}
                       style={{ width: `${percentage}%` }}
                     />
                   </div>

@@ -42,9 +42,9 @@ const GtkStatCard = ({
     <div className="space-y-2">
       {[
         {
-          label: title === "PTK" ? "Kekurangan Guru" : "Total Sekolah",
-          value: stats.kekurangan,
-          color: "rose",
+          label: title === "PTK" ? "Ideal" : "Total Siswa",
+          value: stats.ideal,
+          color: "emerald",
         },
         {
           label: title === "PTK" ? "Kelebihan Guru" : "Tenaga Pendidik",
@@ -52,15 +52,16 @@ const GtkStatCard = ({
           color: "amber",
         },
         {
-          label: title === "PTK" ? "Ideal" : "Tenaga Kependidikan",
-          value: stats.kelebihan,
-          color: "amber",
+          label: title === "PTK" ? "Kekurangan Guru" : "Total Sekolah",
+          value: stats.kekurangan,
+          color: "rose",
         },
-        {
-          label: title === "PTK" ? "Ideal" : "Total Siswa",
-          value: stats.ideal,
-          color: "emerald",
-        },
+
+        // {
+        //   label: title === "PTK" ? "Ideal" : "Tenaga Kependidikan",
+        //   value: stats.kelebihan,
+        //   color: "amber",
+        // },
       ].map((item, idx) => (
         <div key={idx} className="flex justify-between items-center">
           <div className="flex items-center gap-2">
@@ -116,7 +117,7 @@ export const PortalDataCards: React.FC<PortalDataCardsProps> = ({
         <div className="flex flex-col gap-2">
           <div className="w-full h-3 bg-gray-300/40 rounded-full overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-blue-600 to-indigo-500 rounded-full transition-all duration-1000"
+              className="h-full bg-emerald-500 rounded-full transition-all duration-1000"
               style={{ width: `${cards.kepegawaian.percentage}%` }}
             ></div>
           </div>

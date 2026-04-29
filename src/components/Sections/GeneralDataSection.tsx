@@ -1,11 +1,5 @@
 import React from "react";
-import {
-  School,
-  GraduationCap,
-  LayoutPanelLeft,
-  Users,
-  Settings,
-} from "lucide-react";
+import { Icon } from "@iconify/react";
 
 interface Props {
   data: any;
@@ -16,31 +10,37 @@ export const GeneralDataSection: React.FC<Props> = ({ data }) => {
     {
       label: "Total Sekolah",
       value: data?.total_sekolah || 0,
-      icon: School,
-      color: "emerald",
-    },
-    {
-      label: "Total Guru",
-      value: data?.total_guru || 0,
-      icon: GraduationCap,
+      icon: "hugeicons:school",
       color: "emerald",
     },
     {
       label: "Jumlah Rombel",
       value: data?.total_rombel || 0,
-      icon: LayoutPanelLeft,
+      icon: "carbon:multiuser-device",
       color: "emerald",
     },
     {
       label: "Total Siswa",
       value: data?.total_siswa || 0,
-      icon: Users,
+      icon: "solar:user-linear",
       color: "emerald",
     },
     {
-      label: "Total Tendik",
+      label: "Total Guru",
+      value: data?.total_guru || 0,
+      icon: "mdi:school-outline",
+      color: "emerald",
+    },
+    {
+      label: "Total Tenaga Kependidikan",
       value: data?.total_tendik || 0,
-      icon: Settings,
+      icon: "clarity:administrator-line",
+      color: "emerald",
+    },
+    {
+      label: "Total Pegawai",
+      value: data?.total_tendik || 0,
+      icon: "clarity:administrator-line",
       color: "emerald",
     },
   ];
@@ -49,11 +49,11 @@ export const GeneralDataSection: React.FC<Props> = ({ data }) => {
     <section className="w-full ">
       {/* Turunkan bg-white/60 menjadi bg-white/30 */}
       <div className="glass ring-2 !ring-white rounded-[2rem] px-8 py-6 relative z-10">
-        <h3 className="text-xl font-bold text-slate-800 mb-8 drop-shadow-sm">
+        <div className="text-xl font-bold text-slate-800 mb-5">
           Data Umum Satuan Pendidikan
-        </h3>
+        </div>
 
-        <div className="flex  justify-between">
+        <div className="grid grid-cols-3 gap-4">
           {stats.map((item, idx) => (
             <div
               key={idx}
@@ -62,7 +62,7 @@ export const GeneralDataSection: React.FC<Props> = ({ data }) => {
               <div
                 className={`w-14 h-14 rounded-2xl bg-green-50 text-${item.color}-600 flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}
               >
-                <item.icon className="w-7 h-7" />
+                <Icon icon={item.icon.toString()} className="text-3xl" />
               </div>
               <div className="flex flex-col">
                 <span className="text-sm whitespace-nowrap">{item.label}</span>
