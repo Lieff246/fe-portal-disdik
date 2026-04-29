@@ -8,12 +8,16 @@ export const PortalService = {
     const response = await axios.get(`${API_BASE_URL}/portal/summary`);
     return response.data.data;
   },
-  getProjections: async () => {
-    const response = await axios.get(`${API_BASE_URL}/portal/projections`);
+  getProjections: async (params?: { range?: string; month?: number }) => {
+    const response = await axios.get(`${API_BASE_URL}/portal/projections`, { params });
     return response.data.data;
   },
   getPortalCards: async () => {
     const response = await axios.get(`${API_BASE_URL}/portal/cards`);
+    return response.data.data;
+  },
+  getNeraca: async () => {
+    const response = await axios.get(`${API_GTK_URL}/portal/neraca`);
     return response.data.data;
   },
   getGtkStats: async () => {

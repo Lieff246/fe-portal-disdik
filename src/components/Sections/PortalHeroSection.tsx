@@ -8,11 +8,17 @@ import { PortalDataCards } from "./PortalCardSection";
 interface Props {
   portalData: any;
   onViewRegionDetail: (marker: any) => void;
+  onOpenNeraca?: () => void;
+  onProyeksiFilterChange?: (range: "monthly" | "yearly", month?: number) => void;
+  proyeksiLoading?: boolean;
 }
 
 export const PortalHeroSection: React.FC<Props> = ({
   portalData,
   onViewRegionDetail,
+  onOpenNeraca,
+  onProyeksiFilterChange,
+  proyeksiLoading,
 }) => {
   const projections = portalData?.projections || {
     berkala: { target_count: 0, real_count: 0, overdue_count: 0 },
@@ -50,14 +56,13 @@ export const PortalHeroSection: React.FC<Props> = ({
       <div className="relative z-10 w-full flex flex-col lg:flex-row gap-4 items-stretch">
         {/* Left: Proyeksi (flex-[3] = mengambil porsi 3/4 alias 75%) */}
         <div className="flex-[3] flex flex-col gap-6">
-          <div className="flex flex-col gap-1 text-right lg:text-left border-l-3 pl-4 border-[#2563EB]">
-            <div className="font-bold">Proyeksi</div>
-            <div className="text-sm font-medium">
-              Dinas Pendidikan Prov. Sulawesi Tengah
-            </div>
+          <div className="w-full lg:w-1/3">
+             <ProyeksiCard 
+               projections={projections} 
+               onFilterChange={onProyeksiFilterChange}
+               isLoading={proyeksiLoading}
+             />
           </div>
-
-          <ProyeksiCard projections={projections} />
 
           <GeneralDataSection data={portalData?.summary} />
         </div>
@@ -84,7 +89,38 @@ export const PortalHeroSection: React.FC<Props> = ({
         </div>{" "}
       </div>
 
-      <ProgressUpdateSection />
+      <div className="w-full flex justify-between items-end mt-10 relative z-10">
+          {/* Neraca Card Bottom Left */}
+          <div 
+            className="w-80 p-6 rounded-[2.5rem] bg-blue-600 text-white flex flex-col gap-4 cursor-pointer hover:scale-105 transition-transform shadow-xl shadow-blue-500/20"
+            onClick={onOpenNeraca}
+          >
+             <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+             </div>
+             <div>
+                <h4 className="font-black text-xl uppercase tracking-tighter">Neraca</h4>
+                <p className="text-xs text-white/70 font-medium leading-relaxed">
+                  Akses informasi lengkap mengenai Data Pendidikan dan Kepegawaian Sulawesi Tengah.
+                </p>
+             </div>
+             <button 
+               className="w-full py-3 bg-blue-700/50 rounded-2xl text-xs font-black uppercase tracking-widest border border-white/10 hover:bg-blue-500 transition-colors"
+               onClick={(e) => {
+                 e.stopPropagation();
+                 onOpenNeraca?.();
+               }}
+             >
+                Lihat Data
+             </button>
+          </div>
+
+          <div className="flex-1 ml-10">
+             <ProgressUpdateSection />
+          </div>
+      </div>
 
       <footer className="py-0 flex flex-col items-center gap-6 opacity-50 mt-10">
         <p className="text-center">

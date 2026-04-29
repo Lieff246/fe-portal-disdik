@@ -26,6 +26,7 @@ export const SulawesiMap: React.FC<MapProps> = ({
   onViewDetail,
 }) => {
   const [cabdisGeoData, setCabdisGeoData] = useState<Record<number, any>>({});
+  const [hoveredCabdis, setHoveredCabdis] = useState<string | null>(null);
 
   useEffect(() => {
     const loadGeoData = async () => {
@@ -54,7 +55,6 @@ export const SulawesiMap: React.FC<MapProps> = ({
     return ranks;
   }, [markers]);
 
-  // Style untuk base map Indonesia
   const baseStyle = (feature: any) => {
     const provinceName =
       feature.properties?.PROVINSI ||
@@ -62,39 +62,52 @@ export const SulawesiMap: React.FC<MapProps> = ({
       feature.properties?.propinsi ||
       "";
 
-    // Sembunyikan base map Sulteng karena akan ditimpa oleh GeoJSON Cabdis
     if (provinceName.toUpperCase() === "SULAWESI TENGAH") {
       return { fillOpacity: 0, weight: 0 };
     }
 
     return {
-      color: "#ffffff", // Garis tepi putih agar clean seperti gambar referensi
+      color: "#ffffff",
       weight: 1.5,
-      fillColor: "#e2e8f0", // Warna daratan abu-abu terang
+      fillColor: "#e2e8f0",
       fillOpacity: 1,
     };
   };
 
   const getCabdisStyle = (cabdisName: string) => {
     const rank = cabdisRanks[cabdisName.toUpperCase()];
-    const color =
+    const isHovered = hoveredCabdis === cabdisName;
+    const baseColor =
       rank !== undefined
         ? RANK_COLORS[rank] || RANK_COLORS[RANK_COLORS.length - 1]
         : "#cbd5e1";
 
     return {
-      color: "#ffffff", // Garis batas antar Cabdis putih
-      weight: 1.5,
-      fillColor: color, // Warna solid berdasarkan ranking (tanpa hover)
-      fillOpacity: 1,
+      color: "#ffffff",
+      weight: isHovered ? 3 : 1.5,
+      fillColor: baseColor,
+      fillOpacity: isHovered ? 0.8 : 1,
+      className: "transition-all duration-300",
     };
   };
 
   const onEachFeature = (feature: any, layer: any, cabdisData: any) => {
     if (!cabdisData) return;
 
-    // Tetap menggunakan event klik saja tanpa hover untuk mempertahankan warna solid wilayah
     layer.on({
+      mouseover: (e: any) => {
+        setHoveredCabdis(cabdisData.name);
+        const l = e.target;
+        l.setStyle({
+          weight: 3,
+          fillOpacity: 0.8,
+        });
+      },
+      mouseout: (e: any) => {
+        setHoveredCabdis(null);
+        const l = e.target;
+        l.setStyle(getCabdisStyle(cabdisData.name));
+      },
       click: () => {
         onViewDetail?.(cabdisData);
       },
@@ -123,18 +136,16 @@ export const SulawesiMap: React.FC<MapProps> = ({
   };
 
   return (
-    // 1. Ubah bg-white menjadi bg-transparent
     <div className="absolute inset-0 w-full h-full overflow-hidden bg-transparent">
       <MapContainer
-        center={[-4.1, 121.8]}
-        zoom={6.8}
+        center={[-1.4, 121.0]}
+        zoom={7.2}
         zoomControl={false}
         dragging={false}
         scrollWheelZoom={false}
         doubleClickZoom={false}
         boxZoom={false}
         attributionControl={false}
-        // 2. Ubah background inline style menjadi transparent
         style={{ width: "100%", height: "100%", background: "transparent" }}
       >
         <GeoJSON data={indonesiaGeoData as any} style={baseStyle} />
@@ -147,7 +158,7 @@ export const SulawesiMap: React.FC<MapProps> = ({
 
           return (
             <GeoJSON
-              key={`cabdis-${num}-${markers.length}`}
+              key={`cabdis-${num}-${markers.length}-${hoveredCabdis === cabdisName}`}
               data={geo}
               style={() => getCabdisStyle(cabdisName)}
               onEachFeature={(f, l) => onEachFeature(f, l, cabdisData)}
@@ -157,9 +168,7 @@ export const SulawesiMap: React.FC<MapProps> = ({
       </MapContainer>
 
       <style>{`
-        /* 3. Paksa .leaflet-container menjadi transparent, bukan #ffffff */
         .leaflet-container { background: transparent !important; }
-        
         .custom-map-tooltip {
           background: transparent !important;
           border: none !important;
@@ -167,7 +176,10 @@ export const SulawesiMap: React.FC<MapProps> = ({
           padding: 0 !important;
         }
         .custom-map-tooltip::before { display: none !important; }
-        .leaflet-interactive { cursor: pointer !important; }
+        .leaflet-interactive { 
+          cursor: pointer !important; 
+          transition: fill-opacity 0.3s, stroke-width 0.3s !important;
+        }
       `}</style>
     </div>
   );

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { PortalService } from "@/services/portalService";
 
@@ -14,15 +14,17 @@ export const Home = () => {
   });
 
   const [portalData, setPortalData] = useState<any>(null);
+  const [initialProjections, setInitialProjections] = useState<any>(null);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [summary, projections, cards, gtkStats] = await Promise.all([
+      const [summary, projections, cards, gtkStats, neraca] = await Promise.all([
         PortalService.getSummary(),
-        PortalService.getProjections(),
+        PortalService.getProjections(), // Initial request for projections (Yearly/Current)
         PortalService.getPortalCards(),
         PortalService.getGtkStats(),
+        PortalService.getNeraca(),
       ]);
 
       setPortalData({
@@ -30,13 +32,46 @@ export const Home = () => {
         projections,
         cards,
         gtkStats,
+        neraca,
       });
+      setInitialProjections(projections);
     } catch (error) {
       console.error(error);
     } finally {
       setLoading(false);
     }
   };
+
+  const [proyeksiLoading, setProyeksiLoading] = useState(false);
+
+  const handleProyeksiFilterChange = useCallback(async (range: "monthly" | "yearly", month?: number) => {
+    setProyeksiLoading(true);
+    try {
+      const year = 2026;
+      let params: any = { range };
+      
+      if (range === "monthly") {
+        const monthStr = month && month < 10 ? `0${month}` : `${month}`;
+        params.month = `${year}-${monthStr}`;
+      } else {
+        params.month = `${year}-01`;
+      }
+
+      const res = await PortalService.getProjections(params);
+      
+      setPortalData((prev: any) => ({
+        ...prev,
+        projections: {
+          ...prev.projections,
+          [range]: res
+        }
+      }));
+    } catch (error) {
+      console.error("Failed to fetch projections:", error);
+    } finally {
+      setProyeksiLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     fetchData();
@@ -60,6 +95,8 @@ export const Home = () => {
       portalData={portalData}
       filters={filters}
       onFilterChange={setFilters}
+      onProyeksiFilterChange={handleProyeksiFilterChange}
+      proyeksiLoading={proyeksiLoading}
     />
   );
 };

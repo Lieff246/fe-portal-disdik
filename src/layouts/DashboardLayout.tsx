@@ -5,8 +5,9 @@ import { ServiceDetailModal } from "@/components/Fragments/ServiceDetailModal";
 import { GtkDrilldownSidebar } from "@/components/Fragments/GtkDrilldownSidebar";
 import type { DetailData, GtkLandingData } from "@/types";
 import { PortalHeroSection } from "@/components/Sections/PortalHeroSection";
-import { CabdisSummaryModal } from "@/components/Fragments/CabdisSummaryModal";
+import { RegionSummarySidebar } from "@/components/Fragments/RegionSummarySidebar";
 import { GtkDetailSidebar } from "@/components/Analytics/GtkDetailSidebar";
+import { NeracaSidebar } from "@/components/Fragments/NeracaSidebar";
 
 interface DashboardLayoutProps {
   landingData?: GtkLandingData;
@@ -18,6 +19,8 @@ interface DashboardLayoutProps {
     sekolah: string;
   };
   onFilterChange?: (filters: any) => void;
+  onProyeksiFilterChange?: (range: "monthly" | "yearly", month?: number) => void;
+  proyeksiLoading?: boolean;
 }
 
 export const DashboardLayout = ({
@@ -25,6 +28,8 @@ export const DashboardLayout = ({
   portalData,
   filters,
   onFilterChange,
+  onProyeksiFilterChange,
+  proyeksiLoading,
 }: DashboardLayoutProps) => {
   const [detailData, setDetailData] = useState<DetailData | null>(null);
   const [activeDetail, setActiveDetail] = useState<{
@@ -35,6 +40,7 @@ export const DashboardLayout = ({
   const [isTrackingOpen, setIsTrackingOpen] = useState(false);
   const [isServiceDetailOpen, setIsServiceDetailOpen] = useState(false);
   const [isDrilldownOpen, setIsDrilldownOpen] = useState(false);
+  const [isNeracaOpen, setIsNeracaOpen] = useState(false);
   const [selectedCabdisForSummary, setSelectedCabdisForSummary] =
     useState<any>(null);
   const initialServiceTab = "guru_sma";
@@ -100,11 +106,17 @@ export const DashboardLayout = ({
         onFilterChange={onFilterChange || (() => {})}
       />
 
-      <CabdisSummaryModal
+      <RegionSummarySidebar
         isOpen={!!selectedCabdisForSummary}
         onClose={() => setSelectedCabdisForSummary(null)}
         data={selectedCabdisForSummary}
         onViewDetail={handleConfirmRegionDetail}
+      />
+
+      <NeracaSidebar
+        isOpen={isNeracaOpen}
+        onClose={() => setIsNeracaOpen(false)}
+        neracaData={portalData?.neraca}
       />
 
       {/* 2. Main content fix: Tambahkan 'z-10' agar semua komponen di dalamnya ditarik ke atas background */}
@@ -113,6 +125,9 @@ export const DashboardLayout = ({
         <PortalHeroSection
           portalData={portalData}
           onViewRegionDetail={handleOpenRegionDetail}
+          onOpenNeraca={() => setIsNeracaOpen(true)}
+          onProyeksiFilterChange={onProyeksiFilterChange}
+          proyeksiLoading={proyeksiLoading}
         />
       </main>
     </div>
