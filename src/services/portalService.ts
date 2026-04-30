@@ -19,6 +19,13 @@ export const PortalService = {
     const response = await axios.get(`${API_BASE_URL}/portal/neraca`, { params });
     return response.data.data;
   },
+  downloadNeracaPdf: async (params?: any) => {
+    const response = await axios.get(`${API_BASE_URL}/portal/neraca-pdf`, { 
+        params,
+        responseType: 'blob' 
+    });
+    return response.data;
+  },
   getSchoolReports: async (params?: any) => {
     const response = await axios.get(`${API_BASE_URL}/portal/school-reports`, { params });
     return response.data; // Return full response for summary

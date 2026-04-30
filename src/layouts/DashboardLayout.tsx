@@ -151,7 +151,7 @@ export const DashboardLayout = ({
       <NeracaSidebar
         isOpen={isNeracaOpen}
         onClose={() => setIsNeracaOpen(false)}
-        neracaData={portalData?.neraca}
+        initialNeracaData={portalData?.neraca}
       />
 
       {/* 2. Main content fix: Tambahkan 'z-10' agar semua komponen di dalamnya ditarik ke atas background */}
