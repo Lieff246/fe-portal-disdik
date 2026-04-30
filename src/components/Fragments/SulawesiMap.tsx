@@ -101,20 +101,20 @@ export const SulawesiMap: React.FC<MapProps> = ({
     const baseColor =
       rank !== undefined
         ? RANK_COLORS[rank] || RANK_COLORS[RANK_COLORS.length - 1]
-        : "#dc2626";
+        : "#2563eb";
 
     return {
       color: "#ffffff",
       weight: isHovered ? 3 : 1.5,
-      fillColor: baseColor,
-      fillOpacity: isHovered ? 0.8 : 1,
+      fillColor: isHovered ? "#1e40af" : baseColor, // bg-blue-800 is #1e40af
+      fillOpacity: isHovered ? 0.9 : 1,
       className: "transition-all duration-300",
     };
   };
 
   const onEachFeature = (feature: any, layer: any, cabdisData: any) => {
     if (!cabdisData) return;
-
+    console.log(feature);
     layer.on({
       mouseover: (e: any) => {
         setHoveredCabdis(cabdisData.name);
@@ -134,20 +134,17 @@ export const SulawesiMap: React.FC<MapProps> = ({
       },
     });
 
-    const regencyName =
-      feature.properties?.NAMOBJ ||
-      feature.properties?.name ||
-      feature.properties?.KABKOT ||
-      "Wilayah Kerja";
+    // const regencyName =
+    //   feature.properties?.NAMOBJ ||
+    //   feature.properties?.name ||
+    //   feature.properties?.KABKOT ||
+    //   "Wilayah Kerja";
 
     layer.bindTooltip(
       `
       <div class="px-3 py-2 bg-white/90 backdrop-blur-md rounded-xl shadow-xl border border-slate-100">
-        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-tight">${cabdisData.name}</p>
-        <h5 class="text-sm font-black text-slate-800">${regencyName}</h5>
+        <p class="text-sm font-bold">${cabdisData.name}</p>
         <div class="mt-2 pt-2 border-t border-slate-100 flex items-center gap-2">
-          <span class="text-[10px] font-black text-rose-500">Kekurangan: ${cabdisData.stats?.kekurangan || 0}</span>
-          <div class="w-1 h-1 bg-slate-200 rounded-full"></div>
           <span class="text-[10px] font-black text-slate-400">Klik Detail</span>
         </div>
       </div>
