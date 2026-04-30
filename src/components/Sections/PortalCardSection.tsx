@@ -7,7 +7,62 @@ interface PortalDataCardsProps {
   gtkStats: any;
 }
 
-// Reusable component untuk Card PTK, SMA, dan SMK
+// Card untuk Bidang SMA/SMK
+const BidangStatCard = ({
+  title,
+  stats,
+}: {
+  title: string;
+  stats: any;
+  url?: string;
+}) => (
+  <div className="glass-card rounded-[2.5rem] p-6 flex flex-col gap-6">
+    <div className="flex items-center gap-4">
+      <div className="aspect-square h-11 rounded-full bg-[#DBEAFE] text-blue-600 flex items-center justify-center">
+        <Icon icon="streamline-plump:web" className="text-xl" />
+      </div>
+      <div>
+        <h4 className="text-sm flex items-start font-bold text-[#1E293B]">
+          {title}
+          <div className="text-[11px]">+</div>
+        </h4>
+        <p className="text-xs font-medium mt-0.5">
+          Dinas Pendidikan Prov Sulteng
+        </p>
+      </div>
+    </div>
+
+    <div className="flex flex-col gap-2 ml-14">
+      {[
+        { label: "Total Sekolah", value: stats.schools || 0, icon: "mdi:school", bg: "bg-blue-50", text: "text-blue-600", circle: "bg-blue-100" },
+        { label: "Total Rombel", value: stats.teachers || 0, icon: "mdi:account-tie", bg: "bg-indigo-50", text: "text-indigo-600", circle: "bg-indigo-100" },
+        { label: "Total Siswa", value: stats.students || 0, icon: "mdi:account-group", bg: "bg-amber-50", text: "text-amber-600", circle: "bg-amber-100" },
+        // { label: "Total Guru", value: stats.teachers || 0, icon: "mdi:account-tie", bg: "bg-indigo-50", text: "text-indigo-600", circle: "bg-indigo-100" },
+        // { label: "Total Tenaga Pendidik", value: stats.tendik || 0, icon: "mdi:account-cog", bg: "bg-emerald-50", text: "text-emerald-600", circle: "bg-emerald-100" },
+      ].map((item, idx) => (
+        <div key={idx} className={`${item.bg} rounded-full py-1 px-2 flex items-center justify-between group transition-all`}>
+          <div className="flex items-center gap-3">
+            <div className={`w-8 h-8 rounded-full ${item.circle} ${item.text} flex items-center justify-center`}>
+              <Icon icon={item.icon} className="text-lg" />
+            </div>
+            <span className="text-xs">{item.label}</span>
+          </div>
+          <span className={`text-xs font-bold ${item.text}`}>{item.value.toLocaleString()}</span>
+        </div>
+      ))}
+    </div>
+    <button
+      onClick={() => alert("Sedang dalam tahap pengembangan")}
+      className="w-full py-3 bg-slate-400  text-white rounded-2xl font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-blue-200 transition-all group cursor-pointer"
+    >
+      <FileText className="w-3.5 h-3.5" />
+      <span>Kunjungi</span>
+      <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+    </button>
+  </div>
+);
+
+// Original GtkStatCard untuk PTK
 const GtkStatCard = ({
   title,
   stats,
@@ -42,26 +97,20 @@ const GtkStatCard = ({
     <div className="space-y-2">
       {[
         {
-          label: title === "PTK" ? "Ideal" : "Total Siswa",
+          label: "Ideal",
           value: stats.ideal,
           color: "emerald",
         },
         {
-          label: title === "PTK" ? "Kelebihan Guru" : "Tenaga Pendidik",
+          label: "Kelebihan Guru",
           value: stats.kelebihan,
           color: "amber",
         },
         {
-          label: title === "PTK" ? "Kekurangan Guru" : "Total Sekolah",
+          label: "Kekurangan Guru",
           value: stats.kekurangan,
           color: "rose",
         },
-
-        // {
-        //   label: title === "PTK" ? "Ideal" : "Tenaga Kependidikan",
-        //   value: stats.kelebihan,
-        //   color: "amber",
-        // },
       ].map((item, idx) => (
         <div key={idx} className="flex justify-between items-center">
           <div className="flex items-center gap-2">
@@ -76,18 +125,8 @@ const GtkStatCard = ({
     </div>
 
     <button
-      onClick={() => {
-        if (title === "SMA" || title === "SMK") {
-          alert("Sedang dalam tahap pengembangan");
-        } else {
-          window.open(url, "_blank", "noopener,noreferrer");
-        }
-      }}
-      className={`w-full py-3 ${
-        title === "SMA" || title === "SMK" 
-          ? "bg-slate-400 hover:bg-slate-500 shadow-slate-200" 
-          : "bg-blue-600 hover:bg-blue-700 shadow-blue-200"
-      } text-white rounded-2xl font-bold text-xs flex items-center justify-center gap-2 shadow-lg transition-all group cursor-pointer`}
+      onClick={() => window.open(url, "_blank", "noopener,noreferrer")}
+      className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-blue-200 transition-all group cursor-pointer"
     >
       <FileText className="w-3.5 h-3.5" />
       <span>Kunjungi</span>
@@ -105,6 +144,7 @@ export const PortalDataCards: React.FC<PortalDataCardsProps> = ({
     kelebihan: 0,
     ideal: 0,
   };
+  console.log(statsData);
 
   return (
     <>
@@ -156,21 +196,20 @@ export const PortalDataCards: React.FC<PortalDataCardsProps> = ({
           <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
         </button>
       </div>
-
       {/* GTK Cards */}
       <GtkStatCard
         title="PTK"
         stats={statsData}
         url="https://gtk-disdik.sekolahkukeren.id"
       />
-      <GtkStatCard
+      <BidangStatCard
         title="SMA"
-        stats={statsData}
+        stats={{ schools: 0, teachers: 0, students: 0, tendik: 0 }}
         url="https://gtk-disdik.sekolahkukeren.id"
       />
-      <GtkStatCard
+      <BidangStatCard
         title="SMK"
-        stats={statsData}
+        stats={{ schools: 0, teachers: 0, students: 0, tendik: 0 }}
         url="https://gtk-disdik.sekolahkukeren.id"
       />
     </>

@@ -36,7 +36,7 @@ export const PortalHeroSection: React.FC<Props> = ({
     pppk: { target_count: 0, real_count: 0, overdue_count: 0 },
   };
 
-  const schoolSummary = portalData?.summary?.school_reports;
+  const schoolSummary = portalData?.cards?.school_reports;
 
   const cards = portalData?.cards || {
     kepegawaian: { finished: 0, total: 1000, percentage: 0 },

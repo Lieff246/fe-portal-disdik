@@ -39,7 +39,7 @@ export const GeneralDataSection: React.FC<Props> = ({ data }) => {
     },
     {
       label: "Total Pegawai",
-      value: data?.total_tendik || 0,
+      value: data?.total_pegawai || 0,
       icon: "clarity:administrator-line",
       color: "emerald",
     },
