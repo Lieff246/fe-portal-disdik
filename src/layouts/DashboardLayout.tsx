@@ -36,6 +36,7 @@ export const DashboardLayout = ({
   onProyeksiFilterChange,
   proyeksiLoading,
 }: DashboardLayoutProps) => {
+  // console.log(portalData);
   const [currentMonth, setCurrentMonth] = useState("2026-04");
   const [detailData, setDetailData] = useState<DetailData | null>(null);
   const [activeDetail, setActiveDetail] = useState<{
@@ -118,7 +119,7 @@ export const DashboardLayout = ({
             sekolah: "",
           }
         }
-        onFilterChange={onFilterChange || (() => {})}
+        onFilterChange={onFilterChange || (() => { })}
       />
 
       {/* Projection Sidebars */}
