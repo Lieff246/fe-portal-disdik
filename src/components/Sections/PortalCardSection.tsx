@@ -76,8 +76,18 @@ const GtkStatCard = ({
     </div>
 
     <button
-      onClick={() => window.open(url, "_blank", "noopener,noreferrer")}
-      className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-blue-200 transition-all group cursor-pointer"
+      onClick={() => {
+        if (title === "SMA" || title === "SMK") {
+          alert("Sedang dalam tahap pengembangan");
+        } else {
+          window.open(url, "_blank", "noopener,noreferrer");
+        }
+      }}
+      className={`w-full py-3 ${
+        title === "SMA" || title === "SMK" 
+          ? "bg-slate-400 hover:bg-slate-500 shadow-slate-200" 
+          : "bg-blue-600 hover:bg-blue-700 shadow-blue-200"
+      } text-white rounded-2xl font-bold text-xs flex items-center justify-center gap-2 shadow-lg transition-all group cursor-pointer`}
     >
       <FileText className="w-3.5 h-3.5" />
       <span>Kunjungi</span>

@@ -7,6 +7,7 @@ import {
   Clock,
   MapPin,
   BarChart3,
+  ChevronRight,
 } from "lucide-react";
 import { PortalService } from "@/services/portalService";
 
@@ -105,43 +106,65 @@ export const SchoolReportSidebar: React.FC<SchoolReportSidebarProps> = ({
       <div className="flex-1 overflow-y-auto p-8 scrollbar-hide space-y-8">
         {/* Mini Progress */}
         {summary && (
-          <div className="bg-slate-50 rounded-[2.5rem] p-6 border border-slate-100">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-sm font-bold">Progres Laporan</span>
-              <span className="text-sm font-black text-blue-600">
-                {summary.percentage}%
-              </span>
+          <div className="bg-slate-50/50 rounded-[2.5rem] p-8 border border-slate-100 flex flex-col gap-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-bold text-blue-600">
+                  Progress Laporan Bulanan Sekolah
+                </h3>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold text-blue-600">
+                  {monthLabel}
+                </span>
+                <ChevronRight className="w-5 h-5 text-slate-400" />
+              </div>
             </div>
-            <div className="w-full h-3 bg-slate-200 rounded-full overflow-hidden">
+
+            <div className="w-full h-5 bg-slate-200/50 rounded-full overflow-hidden flex">
               <div
-                className="h-full bg-blue-600 transition-all duration-1000 ease-out"
+                className="h-full bg-emerald-500 transition-all duration-1000"
                 style={{ width: `${summary.percentage}%` }}
               />
+              <div
+                className="h-full bg-amber-500 transition-all duration-1000"
+                style={{ width: `${100 - summary.percentage}%` }}
+              />
             </div>
-            <div className="flex justify-between mt-4">
-              <div className="text-center">
-                <p className="text-[10px] font-bold text-slate-400 uppercase">
-                  Total
-                </p>
-                <p className="text-lg font-black text-slate-700">
-                  {summary.total}
-                </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white rounded-[2rem] p-6 flex flex-col gap-2 border border-slate-100 shadow-sm">
+                <div className="flex items-center gap-3">
+                  <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
+                  <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    Sudah Update
+                  </span>
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-xl font-black text-slate-800">
+                    {(summary.finished || 0).toLocaleString()}
+                  </span>
+                  <span className="text-sm font-bold text-slate-500">
+                    ({summary.percentage}%)
+                  </span>
+                </div>
               </div>
-              <div className="text-center">
-                <p className="text-[10px] font-bold text-emerald-400 uppercase">
-                  Sudah
-                </p>
-                <p className="text-lg font-black text-emerald-600">
-                  {summary.finished}
-                </p>
-              </div>
-              <div className="text-center">
-                <p className="text-[10px] font-bold text-rose-400 uppercase">
-                  Belum
-                </p>
-                <p className="text-lg font-black text-rose-600">
-                  {summary.pending}
-                </p>
+
+              <div className="bg-white rounded-[2rem] p-6 flex flex-col gap-2 border border-slate-100 shadow-sm">
+                <div className="flex items-center gap-3">
+                  <div className="w-3 h-3 rounded-full bg-amber-500"></div>
+                  <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    Belum Update
+                  </span>
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-xl font-black text-slate-800">
+                    {(summary.pending || 0).toLocaleString()}
+                  </span>
+                  <span className="text-sm font-bold text-slate-500">
+                    ({(100 - summary.percentage).toFixed(2)}%)
+                  </span>
+                </div>
               </div>
             </div>
           </div>
