@@ -1,5 +1,6 @@
 import { Home } from '@/pages/Home';
 import { CabangDinas } from '@/pages/CabangDinas';
+import About from '@/pages/About';
 
 const landingRoutes = [
   {
@@ -9,6 +10,10 @@ const landingRoutes = [
   {
     path: 'cabang/:id',
     element: <CabangDinas />,
+  },
+  {
+    path: 'about',
+    element: <About />,
   },
 ];
 

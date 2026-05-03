@@ -43,5 +43,9 @@ export const PortalService = {
     const API_GTK_URL = import.meta.env.VITE_API_SERVICE_GTK;
     const response = await axios.get(`${API_GTK_URL}/v1/gtk-landingpage/summary`);
     return response.data.data;
+  },
+  getAboutInfo: async () => {
+    const response = await axios.get(`${API_BASE_URL}/portal/about-info`);
+    return response.data.data;
   }
 };
