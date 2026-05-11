@@ -210,7 +210,7 @@ export const PortalDataCards: React.FC<PortalDataCardsProps> = ({
       <BidangStatCard
         title="SMK"
         stats={{ schools: 0, teachers: 0, students: 0, tendik: 0 }}
-        url="https://gtk-disdik.sekolahkukeren.id"
+        url="https://satu-data-smk.jalanin.tech"
       />
     </>
   );
