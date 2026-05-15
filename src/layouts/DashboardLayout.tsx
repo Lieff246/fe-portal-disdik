@@ -37,7 +37,7 @@ export const DashboardLayout = ({
   proyeksiLoading,
 }: DashboardLayoutProps) => {
   // console.log(portalData);
-  const [currentMonth, setCurrentMonth] = useState("2026-04");
+  const [currentMonth, setCurrentMonth] = useState(new Date().toISOString().slice(0, 7));
   const [detailData, setDetailData] = useState<DetailData | null>(null);
   const [activeDetail, setActiveDetail] = useState<{
     type: "subject" | "region";
