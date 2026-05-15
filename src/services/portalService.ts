@@ -4,38 +4,38 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export const PortalService = {
   getSummary: async () => {
-    const response = await axios.get(`${API_BASE_URL}/portal/summary`);
+    const response = await axios.get(`${API_BASE_URL}/v1/portal/summary`);
     return response.data.data;
   },
   getProjections: async (params?: any) => {
-    const response = await axios.get(`${API_BASE_URL}/portal/projections`, { params });
+    const response = await axios.get(`${API_BASE_URL}/v1/portal/projections`, { params });
     return response.data.data;
   },
   getPortalCards: async () => {
-    const response = await axios.get(`${API_BASE_URL}/portal/cards`);
+    const response = await axios.get(`${API_BASE_URL}/v1/portal/cards`);
     return response.data.data;
   },
   getNeraca: async (params?: any) => {
-    const response = await axios.get(`${API_BASE_URL}/portal/neraca`, { params });
+    const response = await axios.get(`${API_BASE_URL}/v1/portal/neraca`, { params });
     return response.data.data;
   },
   downloadNeracaPdf: async (params?: any) => {
-    const response = await axios.get(`${API_BASE_URL}/portal/neraca-pdf`, { 
-        params,
-        responseType: 'blob' 
+    const response = await axios.get(`${API_BASE_URL}/v1/portal/neraca-pdf`, {
+      params,
+      responseType: 'blob'
     });
     return response.data;
   },
   getSchoolReports: async (params?: any) => {
-    const response = await axios.get(`${API_BASE_URL}/portal/school-reports`, { params });
+    const response = await axios.get(`${API_BASE_URL}/v1/portal/school-reports`, { params });
     return response.data; // Return full response for summary
   },
   getRegionDetail: async (params?: { department_id: string; month?: string; range?: string }) => {
-    const response = await axios.get(`${API_BASE_URL}/portal/region-detail`, { params });
+    const response = await axios.get(`${API_BASE_URL}/v1/portal/region-detail`, { params });
     return response.data.data;
   },
   getDepartments: async () => {
-    const response = await axios.get(`${API_BASE_URL}/portal/departments`);
+    const response = await axios.get(`${API_BASE_URL}/v1/portal/departments`);
     return response.data.data;
   },
   getGtkStats: async () => {
@@ -45,7 +45,7 @@ export const PortalService = {
     return response.data.data;
   },
   getAboutInfo: async () => {
-    const response = await axios.get(`${API_BASE_URL}/portal/about-info`);
+    const response = await axios.get(`${API_BASE_URL}/v1/portal/about-info`);
     return response.data.data;
   }
 };

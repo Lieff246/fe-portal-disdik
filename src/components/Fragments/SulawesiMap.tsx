@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { MapContainer, GeoJSON } from "react-leaflet";
+import { MapContainer, GeoJSON, Marker, Tooltip } from "react-leaflet";
+import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
 import indonesiaGeoData from "@/assets/geojson/indonesia-provinces.json";
@@ -12,7 +13,18 @@ interface MapProps {
   layer?: "base" | "interactive";
 }
 
-// --- COLOR SCALE (Tailwind Reds) ---
+// --- ICONS ---
+const yellowDotIcon = L.divIcon({
+  className: "custom-marker-dot",
+  html: `<div class="marker-container">
+    <div class="marker-core bg-amber-400 border-2 border-amber-600"></div>
+  </div>`,
+  iconSize: [16, 16],
+  iconAnchor: [8, 8],
+});
+
+
+// --- COLOR SCALE ---
 const RANK_COLORS = [
   "#2563eb",
   "#2563eb",
@@ -20,13 +32,6 @@ const RANK_COLORS = [
   "#2563eb",
   "#2563eb",
   "#2563eb",
-
-  // "#7f1d1d", // Red 900 (Highest Priority)
-  // "#991b1b", // Red 800
-  // "#b91c1c", // Red 700
-  // "#dc2626", // Red 600
-  // "#ef4444", // Red 500
-  // "#f87171", // Red 400
 ];
 
 const thisToRoman = (num: any) => {
@@ -48,6 +53,7 @@ export const SulawesiMap: React.FC<MapProps> = ({
 }) => {
   const [cabdisGeoData, setCabdisGeoData] = useState<Record<number, any>>({});
   const [hoveredCabdis, setHoveredCabdis] = useState<string | null>(null);
+  // const [setActiveMarkerId] = useState<string | number | null>(null);
 
   useEffect(() => {
     const loadGeoData = async () => {
@@ -106,15 +112,15 @@ export const SulawesiMap: React.FC<MapProps> = ({
     return {
       color: "#ffffff",
       weight: isHovered ? 3 : 1.5,
-      fillColor: isHovered ? "#1e40af" : baseColor, // bg-blue-800 is #1e40af
+      fillColor: isHovered ? "#1e40af" : baseColor,
       fillOpacity: isHovered ? 0.9 : 1,
       className: "transition-all duration-300",
     };
   };
 
   const onEachFeature = (feature: any, layer: any, cabdisData: any) => {
-    if (!cabdisData) return;
     console.log(feature);
+    if (!cabdisData) return;
     layer.on({
       mouseover: (e: any) => {
         setHoveredCabdis(cabdisData.name);
@@ -130,22 +136,25 @@ export const SulawesiMap: React.FC<MapProps> = ({
         l.setStyle(getCabdisStyle(cabdisData.name));
       },
       click: () => {
+        // setActiveMarkerId(cabdisData.id);
         onViewDetail?.(cabdisData);
       },
     });
 
-    // const regencyName =
-    //   feature.properties?.NAMOBJ ||
-    //   feature.properties?.name ||
-    //   feature.properties?.KABKOT ||
-    //   "Wilayah Kerja";
-
     layer.bindTooltip(
       `
-      <div class="px-3 py-2 bg-white/90 backdrop-blur-md rounded-xl shadow-xl border border-slate-100">
-        <p class="text-sm font-bold">${cabdisData.name}</p>
-        <div class="mt-2 pt-2 border-t border-slate-100 flex items-center gap-2">
-          <span class="text-[10px] font-black text-slate-400">Klik Detail</span>
+      <div class="px-3 py-2 bg-white/95 backdrop-blur-md rounded-xl shadow-xl border border-slate-100">
+        <p class="text-[11px] font-black text-blue-600 uppercase tracking-wider mb-0.5">Wilayah Kerja</p>
+        <p class="text-sm font-bold text-slate-800">${cabdisData.name}</p>
+        <div class="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between gap-4">
+           <div class="flex flex-col">
+              <span class="text-[9px] text-slate-400 uppercase font-bold">Guru</span>
+              <span class="text-xs font-black text-slate-700">${cabdisData.stats?.teachers || 0}</span>
+           </div>
+           <div class="flex flex-col text-right">
+              <span class="text-[9px] text-slate-400 uppercase font-bold">Sekolah</span>
+              <span class="text-xs font-black text-slate-700">${cabdisData.stats?.schools || 0}</span>
+           </div>
         </div>
       </div>
     `,
@@ -174,25 +183,47 @@ export const SulawesiMap: React.FC<MapProps> = ({
           />
         )}
 
-        {layer === "interactive" &&
-          Object.entries(cabdisGeoData).map(([num, geo]) => {
-            const cabdisName = `CABANG DINAS WILAYAH ${num}`;
-            const cabdisData = (markers || []).find(
-              (m) =>
-                m.name?.toUpperCase() === cabdisName ||
-                m.name?.toUpperCase().includes(`WILAYAH ${num}`) ||
-                m.name?.toUpperCase().includes(`WILAYAH ${thisToRoman(num)}`),
-            );
+        {layer === "interactive" && (
+          <>
+            {Object.entries(cabdisGeoData).map(([num, geo]) => {
+              const cabdisName = `CABANG DINAS WILAYAH ${num}`;
+              const cabdisData = (markers || []).find(
+                (m) =>
+                  m.name?.toUpperCase() === cabdisName ||
+                  m.name?.toUpperCase().includes(`WILAYAH ${num}`) ||
+                  m.name?.toUpperCase().includes(`WILAYAH ${thisToRoman(num)}`),
+              );
 
-            return (
-              <GeoJSON
-                key={`cabdis-${num}-${(markers || []).length}-${hoveredCabdis === cabdisName}`}
-                data={geo}
-                style={() => getCabdisStyle(cabdisName)}
-                onEachFeature={(f, l) => onEachFeature(f, l, cabdisData)}
-              />
-            );
-          })}
+              return (
+                <GeoJSON
+                  key={`cabdis-${num}-${(markers || []).length}`}
+                  data={geo}
+                  style={() => getCabdisStyle(cabdisName)}
+                  onEachFeature={(f, l) => onEachFeature(f, l, cabdisData)}
+                />
+              );
+            })}
+
+            {/* CENTROID MARKERS */}
+            {(markers || []).map((m) => (
+              <Marker
+                key={`marker-${m.id}`}
+                position={[m.lat, m.lng]}
+                icon={yellowDotIcon}
+                eventHandlers={{
+                  click: () => {
+                    // setActiveMarkerId(m.id);
+                    onViewDetail?.(m);
+                  },
+                }}
+              >
+                <Tooltip direction="top" offset={[0, -10]} opacity={1} className="custom-map-tooltip-simple">
+                  <span className="font-bold text-slate-700">{m.name}</span>
+                </Tooltip>
+              </Marker>
+            ))}
+          </>
+        )}
       </MapContainer>
 
       <style>{`
@@ -206,11 +237,35 @@ export const SulawesiMap: React.FC<MapProps> = ({
           box-shadow: none !important;
           padding: 0 !important;
         }
-        .custom-map-tooltip::before { display: none !important; }
+        .custom-map-tooltip-simple {
+          background: white !important;
+          border: 1px solid #f1f5f9 !important;
+          border-radius: 8px !important;
+          padding: 4px 8px !important;
+          font-size: 10px !important;
+          box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1) !important;
+        }
+        .custom-map-tooltip::before, .custom-map-tooltip-simple::before { display: none !important; }
         .leaflet-interactive { 
           pointer-events: auto !important;
           cursor: pointer !important; 
           transition: fill-opacity 0.3s, stroke-width 0.3s !important;
+        }
+
+        /* STATIC MARKER STYLE */
+        .marker-container {
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .marker-core {
+          width: 16px;
+          height: 16px;
+          border-radius: 50%;
+          position: relative;
+          z-index: 2;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
       `}</style>
     </div>
