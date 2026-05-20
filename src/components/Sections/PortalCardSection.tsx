@@ -168,7 +168,7 @@ export const PortalDataCards: React.FC<PortalDataCardsProps> = ({
           <div className="w-full h-3 bg-gray-300/40 rounded-full overflow-hidden">
             <div
               className="h-full bg-emerald-500 rounded-full transition-all duration-1000"
-              style={{ width: `${cards.kepegawaian.percentage}%` }}
+              style={{ width: `${cards?.kepegawaian?.percentage}%` }}
             ></div>
           </div>
           <div className="flex justify-between items-center text-xs">
@@ -176,7 +176,7 @@ export const PortalDataCards: React.FC<PortalDataCardsProps> = ({
               Penyelesaian Berkas
             </span>
             <span className="font-bold text-slate-900">
-              {cards.kepegawaian.finished}/{cards.kepegawaian.total}
+              {cards?.kepegawaian?.finished}/{cards?.kepegawaian?.total}
             </span>
           </div>
         </div>

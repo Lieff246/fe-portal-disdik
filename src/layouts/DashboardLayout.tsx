@@ -36,7 +36,7 @@ export const DashboardLayout = ({
   onProyeksiFilterChange,
   proyeksiLoading,
 }: DashboardLayoutProps) => {
-  // console.log(portalData);
+  console.log(portalData);
   const [currentMonth, setCurrentMonth] = useState(new Date().toISOString().slice(0, 7));
   const [detailData, setDetailData] = useState<DetailData | null>(null);
   const [activeDetail, setActiveDetail] = useState<{
@@ -48,6 +48,7 @@ export const DashboardLayout = ({
   const [isServiceDetailOpen, setIsServiceDetailOpen] = useState(false);
   const [isDrilldownOpen, setIsDrilldownOpen] = useState(false);
   const [isNeracaOpen, setIsNeracaOpen] = useState(false);
+  const [isNeracaRekapOpen, setIsNeracaRekapOpen] = useState(false);
   const [isSchoolReportsOpen, setIsSchoolReportsOpen] = useState(false);
 
   // Projection Sidebars State
@@ -154,12 +155,19 @@ export const DashboardLayout = ({
         initialNeracaData={portalData?.neraca}
       />
 
+      <NeracaSidebar
+        isOpen={isNeracaRekapOpen}
+        onClose={() => setIsNeracaRekapOpen(false)}
+        initialNeracaData={portalData?.neracaRekap}
+      />
+
       {/* 2. Main content fix: Tambahkan 'z-10' agar semua komponen di dalamnya ditarik ke atas background */}
       <main className="w-full bg-transparent min-h-screen relative z-10 overflow-hidden">
         <PortalHeroSection
           portalData={portalData}
           onViewRegionDetail={handleOpenRegionDetail}
           onOpenNeraca={() => setIsNeracaOpen(true)}
+          onOpenNeracaRekap={() => setIsNeracaRekapOpen(true)}
           onProyeksiFilterChange={onProyeksiFilterChange}
           onOpenProyeksiDetail={handleOpenCategoryDetail}
           onOpenSchoolReports={() => setIsSchoolReportsOpen(true)}

@@ -19,22 +19,32 @@ export const Home = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [summary, projections, cards, gtkStats, neraca] = await Promise.all(
-        [
+      const [summary1, projections1, cards1, gtkStats1, neraca1, neracaRekap1] =
+        await Promise.all([
           PortalService.getSummary(),
           PortalService.getProjections(), // Initial request for projections (Yearly/Current)
           PortalService.getPortalCards(),
           PortalService.getGtkStats(),
           PortalService.getNeraca(),
-        ],
-      );
-
+          PortalService.getNeracaRekap(),
+        ]);
+      // console.log("tes");
+      // console.log(summary);
+      // console.log(projections);
+      const summary = summary1?.data;
+      const projections = projections1?.data;
+      const cards = cards1?.data;
+      const gtkStats = gtkStats1?.data;
+      const neraca = neraca1?.data;
+      const neracaRekap = neracaRekap1?.data;
+      // cards, gtkStats, neraca, neracaRekap
       setPortalData({
         summary,
         projections,
         cards,
         gtkStats,
         neraca,
+        neracaRekap,
       });
       setInitialProjections(projections);
     } catch (error) {
