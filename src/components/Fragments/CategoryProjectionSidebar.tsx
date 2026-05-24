@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { X, Search, Award, Calendar, User, Layers, ChevronLeft, ChevronRight } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
+import { Skeleton } from "../Elements/Skeleton/Skeleton";
 
 interface CategoryProjectionSidebarProps {
   isOpen: boolean;
@@ -52,7 +53,7 @@ export const CategoryProjectionSidebar: React.FC<
       setSelectedCabdis("all");
     }, [activeTab]);
 
-    if (!data) return null;
+    if (!data && !isLoading) return null;
 
     const tabs = [
       { id: "semua", label: "Semua", icon: <Layers className="w-4 h-4" /> },
@@ -71,7 +72,7 @@ export const CategoryProjectionSidebar: React.FC<
     const allItems: any[] = [];
 
     const getCategoryItems = (catKey: string, categoryLabel: string) => {
-      const catData = data[catKey] || { target: [], upload: [], terlewat: [] };
+      const catData = data?.[catKey] || { target: [], upload: [], terlewat: [] };
       return [
         ...ensureArray(catData.target).map((item: any) => ({
           ...item,
@@ -109,11 +110,11 @@ export const CategoryProjectionSidebar: React.FC<
     if (activeTab === "semua") {
       allItems.push(...getCategoryItems("berkala", "Berkala"));
       allItems.push(...getCategoryItems("pangkat", "Pangkat"));
-      const pansiunKey = data.pansiun ? "pansiun" : "pensiun";
+      const pansiunKey = data?.pansiun ? "pansiun" : "pensiun";
       allItems.push(...getCategoryItems(pansiunKey, "Pensiun"));
     } else {
       const label = activeTab === "berkala" ? "Berkala" : activeTab === "pangkat" ? "Pangkat" : "Pensiun";
-      const key = activeTab === "pensiun" ? (data.pansiun ? "pansiun" : "pensiun") : activeTab;
+      const key = activeTab === "pensiun" ? (data?.pansiun ? "pansiun" : "pensiun") : activeTab;
       allItems.push(...getCategoryItems(key, label));
     }
 
@@ -156,11 +157,6 @@ export const CategoryProjectionSidebar: React.FC<
       >
         {/* Sidebar Content */}
         <div className="h-full flex w-full relative font-poppins">
-          {isLoading && (
-            <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-[200] flex items-center justify-center">
-              <div className="w-12 h-12 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin" />
-            </div>
-          )}
 
           {/* Left Side: Summary & Chart */}
           <div className="w-[350px] border-r border-slate-100 flex flex-col shrink-0">
@@ -179,7 +175,9 @@ export const CategoryProjectionSidebar: React.FC<
             <div className="flex-1 px-8 pb-8 overflow-y-auto scrollbar-hide">
               <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100 mb-8">
                 <div className="relative aspect-square mb-6 flex items-center justify-center">
-                  {target_count > 0 ? (
+                  {isLoading ? (
+                    <Skeleton className="w-[180px] h-[180px] rounded-full animate-pulse" />
+                  ) : target_count > 0 ? (
                     <>
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
@@ -218,56 +216,66 @@ export const CategoryProjectionSidebar: React.FC<
 
                 {/* Clickable Legend Filters */}
                 <div className="space-y-3">
-                  {/* Telah Submit Button Card */}
-                  <button
-                    onClick={() => setListFilter(listFilter === "realized" ? "all" : "realized")}
-                    className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all duration-300 ${listFilter === "realized"
-                      ? "bg-emerald-600 text-white border-emerald-600 font-bold shadow-md shadow-emerald-100 scale-[1.02]"
-                      : "bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-100/70"
-                      }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className={`w-2.5 h-2.5 rounded-full transition-colors ${listFilter === "realized" ? "bg-white" : "bg-emerald-500"}`} />
-                      <span className="text-sm font-semibold">Telah submit</span>
-                    </div>
-                    <span className="font-bold text-sm">
-                      {real_count}
-                    </span>
-                  </button>
+                  {isLoading ? (
+                    <>
+                      <Skeleton className="w-full h-14 rounded-2xl animate-pulse" />
+                      <Skeleton className="w-full h-14 rounded-2xl animate-pulse" />
+                      <Skeleton className="w-full h-14 rounded-2xl animate-pulse" />
+                    </>
+                  ) : (
+                    <>
+                      {/* Telah Submit Button Card */}
+                      <button
+                        onClick={() => setListFilter(listFilter === "realized" ? "all" : "realized")}
+                        className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all duration-300 ${listFilter === "realized"
+                          ? "bg-emerald-600 text-white border-emerald-600 font-bold shadow-md shadow-emerald-100 scale-[1.02]"
+                          : "bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-100/70"
+                          }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className={`w-2.5 h-2.5 rounded-full transition-colors ${listFilter === "realized" ? "bg-white" : "bg-emerald-500"}`} />
+                          <span className="text-sm font-semibold">Telah submit</span>
+                        </div>
+                        <span className="font-bold text-sm">
+                          {real_count}
+                        </span>
+                      </button>
 
-                  {/* Telah Lewat Button Card */}
-                  <button
-                    onClick={() => setListFilter(listFilter === "overdue" ? "all" : "overdue")}
-                    className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all duration-300 ${listFilter === "overdue"
-                      ? "bg-rose-600 text-white border-rose-600 font-bold shadow-md shadow-rose-100 scale-[1.02]"
-                      : "bg-rose-50 text-rose-600 border-rose-100 hover:bg-rose-100/70"
-                      }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className={`w-2.5 h-2.5 rounded-full transition-colors ${listFilter === "overdue" ? "bg-white" : "bg-rose-500"}`} />
-                      <span className="text-sm font-semibold">Telah lewat</span>
-                    </div>
-                    <span className="font-bold text-sm">
-                      {overdue_count}
-                    </span>
-                  </button>
+                      {/* Telah Lewat Button Card */}
+                      <button
+                        onClick={() => setListFilter(listFilter === "overdue" ? "all" : "overdue")}
+                        className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all duration-300 ${listFilter === "overdue"
+                          ? "bg-rose-600 text-white border-rose-600 font-bold shadow-md shadow-rose-100 scale-[1.02]"
+                          : "bg-rose-50 text-rose-600 border-rose-100 hover:bg-rose-100/70"
+                          }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className={`w-2.5 h-2.5 rounded-full transition-colors ${listFilter === "overdue" ? "bg-white" : "bg-rose-500"}`} />
+                          <span className="text-sm font-semibold">Telah lewat</span>
+                        </div>
+                        <span className="font-bold text-sm">
+                          {overdue_count}
+                        </span>
+                      </button>
 
-                  {/* Belum Upload Button Card */}
-                  <button
-                    onClick={() => setListFilter(listFilter === "pending" ? "all" : "pending")}
-                    className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all duration-300 ${listFilter === "pending"
-                      ? "bg-amber-600 text-white border-amber-600 font-bold shadow-md shadow-amber-100 scale-[1.02]"
-                      : "bg-amber-50 text-amber-500 border-amber-100 hover:bg-amber-100/70"
-                      }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className={`w-2.5 h-2.5 rounded-full transition-colors ${listFilter === "pending" ? "bg-white" : "bg-amber-500"}`} />
-                      <span className="text-sm font-semibold">Belum upload</span>
-                    </div>
-                    <span className="font-bold text-sm">
-                      {pending_count}
-                    </span>
-                  </button>
+                      {/* Belum Upload Button Card */}
+                      <button
+                        onClick={() => setListFilter(listFilter === "pending" ? "all" : "pending")}
+                        className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all duration-300 ${listFilter === "pending"
+                          ? "bg-amber-600 text-white border-amber-600 font-bold shadow-md shadow-amber-100 scale-[1.02]"
+                          : "bg-amber-50 text-amber-500 border-amber-100 hover:bg-amber-100/70"
+                          }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className={`w-2.5 h-2.5 rounded-full transition-colors ${listFilter === "pending" ? "bg-white" : "bg-amber-500"}`} />
+                          <span className="text-sm font-semibold">Belum upload</span>
+                        </div>
+                        <span className="font-bold text-sm">
+                          {pending_count}
+                        </span>
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -340,9 +348,8 @@ export const CategoryProjectionSidebar: React.FC<
               </div>
             </div>
 
-            {/* Teacher data list rendered in HTML Table */}
             <div className="flex-1 overflow-y-auto p-8 scrollbar-hide">
-              {filteredItems.length > 0 ? (
+              {isLoading || filteredItems.length > 0 ? (
                 <>
                   <div className="w-full overflow-x-auto rounded-[2rem] border border-slate-100 shadow-sm bg-white">
                     <table className="w-full text-left border-collapse">
@@ -359,61 +366,84 @@ export const CategoryProjectionSidebar: React.FC<
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-50">
-                        {paginatedItems.map((item, idx) => (
-                          <tr key={idx} className="hover:bg-slate-50/50 transition-colors group">
-                            <td className="py-4 px-6 text-sm text-slate-400 font-medium text-center">{(currentPage - 1) * itemsPerPage + idx + 1}</td>
-                            {activeTab === "semua" && (
+                        {isLoading ? (
+                          [...Array(5)].map((_, idx) => (
+                            <tr key={idx} className="animate-pulse border-b border-slate-50">
+                              <td className="py-4 px-6 text-center"><Skeleton className="h-4 w-6 mx-auto" /></td>
+                              {activeTab === "semua" && (
+                                <td className="py-4 px-6"><Skeleton className="h-6 w-16 rounded-xl" /></td>
+                              )}
+                              <td className="py-4 px-6">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-9 h-9 rounded-xl bg-slate-100 shrink-0" />
+                                  <div className="flex flex-col gap-1.5 flex-1">
+                                    <Skeleton className="h-4 w-28" />
+                                    <Skeleton className="h-3 w-16" />
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-4 px-6"><Skeleton className="h-4 w-36" /></td>
+                              <td className="py-4 px-6"><Skeleton className="h-4 w-24" /></td>
+                              <td className="py-4 px-6 text-center"><Skeleton className="h-6 w-24 rounded-full mx-auto" /></td>
+                            </tr>
+                          ))
+                        ) : (
+                          paginatedItems.map((item, idx) => (
+                            <tr key={idx} className="hover:bg-slate-50/50 transition-colors group">
+                              <td className="py-4 px-6 text-sm text-slate-400 font-medium text-center">{(currentPage - 1) * itemsPerPage + idx + 1}</td>
+                              {activeTab === "semua" && (
+                                <td className="py-4 px-6 text-sm">
+                                  <span className={`px-3 py-1 rounded-xl text-xs font-bold border inline-block ${item.category === "Berkala"
+                                    ? "bg-amber-50 text-amber-600 border-amber-100"
+                                    : item.category === "Pangkat"
+                                      ? "bg-purple-50 text-purple-600 border-purple-100"
+                                      : "bg-blue-50 text-blue-600 border-blue-100"
+                                    }`}>
+                                    {item.category}
+                                  </span>
+                                </td>
+                              )}
+                              <td className="py-4 px-6">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-9 h-9 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-500 transition-all shrink-0">
+                                    <User className="w-5 h-5" />
+                                  </div>
+                                  <div className="text-slate-800 text-sm group-hover:text-blue-600 transition-colors">
+                                    <div className="font-bold">{item.name}</div>
+                                    <div>{item.last_date || "-"}</div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-4 px-6 text-sm text-slate-500 font-medium">{item.school}</td>
                               <td className="py-4 px-6 text-sm">
-                                <span className={`px-3 py-1 rounded-xl text-xs font-bold border inline-block ${item.category === "Berkala"
-                                  ? "bg-amber-50 text-amber-600 border-amber-100"
-                                  : item.category === "Pangkat"
-                                    ? "bg-purple-50 text-purple-600 border-purple-100"
-                                    : "bg-blue-50 text-blue-600 border-blue-100"
-                                  }`}>
-                                  {item.category}
+                                <div className={`font-bold ${item.days_until < 0 ? "text-rose-500" : "text-blue-600"}`}>
+                                  {item.status === "realized"
+                                    ? "Selesai"
+                                    : item.days_until < 0
+                                      ? `Terlewat ${Math.abs(item.days_until)} Hari`
+                                      : `${item.days_until} Hari Lagi`}
+                                </div>
+                                <div>{item.deadline_at}</div>
+                              </td>
+                              <td className="py-4 px-6 text-center">
+                                <span
+                                  className={`px-3 py-1 rounded-full text-xs font-bold border inline-block ${item.status === "realized"
+                                    ? "bg-emerald-50 text-emerald-600 border-emerald-100"
+                                    : item.status === "overdue"
+                                      ? "bg-rose-50 text-rose-600 border-rose-100"
+                                      : "bg-slate-100 text-slate-500 border-slate-200"
+                                    }`}
+                                >
+                                  {item.status === "realized"
+                                    ? "Telah Submit"
+                                    : item.status === "overdue"
+                                      ? "Terlewat"
+                                      : "Belum Submit"}
                                 </span>
                               </td>
-                            )}
-                            <td className="py-4 px-6">
-                              <div className="flex items-center gap-3">
-                                <div className="w-9 h-9 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-500 transition-all shrink-0">
-                                  <User className="w-5 h-5" />
-                                </div>
-                                <div className="text-slate-800 text-sm group-hover:text-blue-600 transition-colors">
-                                  <div className="font-bold">{item.name}</div>
-                                  <div>{item.last_date || "-"}</div>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="py-4 px-6 text-sm text-slate-500 font-medium">{item.school}</td>
-                            <td className="py-4 px-6 text-sm">
-                              <div className={`font-bold ${item.days_until < 0 ? "text-rose-500" : "text-blue-600"}`}>
-                                {item.status === "realized"
-                                  ? "Selesai"
-                                  : item.days_until < 0
-                                    ? `Terlewat ${Math.abs(item.days_until)} Hari`
-                                    : `${item.days_until} Hari Lagi`}
-                              </div>
-                              <div>{item.deadline_at}</div>
-                            </td>
-                            <td className="py-4 px-6 text-center">
-                              <span
-                                className={`px-3 py-1 rounded-full text-xs font-bold border inline-block ${item.status === "realized"
-                                  ? "bg-emerald-50 text-emerald-600 border-emerald-100"
-                                  : item.status === "overdue"
-                                    ? "bg-rose-50 text-rose-600 border-rose-100"
-                                    : "bg-slate-100 text-slate-500 border-slate-200"
-                                  }`}
-                              >
-                                {item.status === "realized"
-                                  ? "Telah Submit"
-                                  : item.status === "overdue"
-                                    ? "Terlewat"
-                                    : "Belum Submit"}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
+                            </tr>
+                          ))
+                        )}
                       </tbody>
                     </table>
                   </div>

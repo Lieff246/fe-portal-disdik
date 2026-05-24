@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { X, Search, User, ChevronLeft, ChevronRight } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
+import { Skeleton } from "../Elements/Skeleton/Skeleton";
 
 interface JatuhTempoSidebarProps {
   isOpen: boolean;
@@ -44,7 +45,7 @@ export const JatuhTempoSidebar: React.FC<JatuhTempoSidebarProps> = ({
     setSelectedCabdis("all");
   }, [activeTab]);
 
-  if (!data) return null;
+  if (!data && !isLoading) return null;
 
 
 
@@ -132,11 +133,6 @@ export const JatuhTempoSidebar: React.FC<JatuhTempoSidebarProps> = ({
         }`}
     >
       <div className="h-full flex w-full relative font-poppins">
-        {isLoading && (
-          <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-[200] flex items-center justify-center">
-            <div className="w-12 h-12 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin" />
-          </div>
-        )}
 
         {/* Left Side: Donut Summary & Interactive Legend Filters */}
         <div className="w-[350px] border-r border-slate-100 flex flex-col shrink-0">
@@ -153,122 +149,135 @@ export const JatuhTempoSidebar: React.FC<JatuhTempoSidebarProps> = ({
           </div>
 
           <div className="flex-1 px-8 overflow-y-auto scrollbar-hide">
-            <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100 mb-8">
-              <div className="relative aspect-square mb-6 flex items-center justify-center">
-                {total_count > 0 ? (
-                  <>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={chartData.length > 0 ? chartData : [{ name: "Empty", value: 1, color: "#e2e8f0" }]}
-                          innerRadius="70%"
-                          outerRadius="100%"
-                          paddingAngle={5}
-                          dataKey="value"
-                          stroke="none"
-                          cornerRadius={40}
-                          startAngle={225}
-                          endAngle={-45}
-                        >
-                          {chartData.length > 0 ? (
-                            chartData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.color} />
-                            ))
-                          ) : (
-                            <Cell fill="#e2e8f0" />
-                          )}
-                        </Pie>
-                      </PieChart>
-                    </ResponsiveContainer>
-                    <div className="absolute inset-0 flex items-center justify-center pt-4">
-                      <span className="text-3xl font-bold text-slate-800">
-                        {total_count}
-                      </span>
-                      <span className="text-xs text-slate-400 font-bold uppercase tracking-wider ml-1">
-                        Ptk
-                      </span>
-                    </div>
-                  </>
-                ) : (
-                  <div className="text-center text-slate-300 py-10">Tidak ada data</div>
-                )}
+              <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100 mb-8">
+                <div className="relative aspect-square mb-6 flex items-center justify-center">
+                  {isLoading ? (
+                    <Skeleton className="w-[180px] h-[180px] rounded-full animate-pulse" />
+                  ) : total_count > 0 ? (
+                    <>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={chartData.length > 0 ? chartData : [{ name: "Empty", value: 1, color: "#e2e8f0" }]}
+                            innerRadius="70%"
+                            outerRadius="100%"
+                            paddingAngle={5}
+                            dataKey="value"
+                            stroke="none"
+                            cornerRadius={40}
+                            startAngle={225}
+                            endAngle={-45}
+                          >
+                            {chartData.length > 0 ? (
+                              chartData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} />
+                              ))
+                            ) : (
+                              <Cell fill="#e2e8f0" />
+                            )}
+                          </Pie>
+                        </PieChart>
+                      </ResponsiveContainer>
+                      <div className="absolute inset-0 flex items-center justify-center pt-4">
+                        <span className="text-3xl font-bold text-slate-800">
+                          {total_count}
+                        </span>
+                        <span className="text-xs text-slate-400 font-bold uppercase tracking-wider ml-1">
+                          Ptk
+                        </span>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-center text-slate-300 py-10">Tidak ada data</div>
+                  )}
+                </div>
+
+                {/* Clickable Legend Cards that sync with top tabs */}
+                <div className="space-y-3">
+                  {isLoading ? (
+                    <>
+                      <Skeleton className="w-full h-14 rounded-2xl animate-pulse" />
+                      <Skeleton className="w-full h-14 rounded-2xl animate-pulse" />
+                      <Skeleton className="w-full h-14 rounded-2xl animate-pulse" />
+                      <Skeleton className="w-full h-14 rounded-2xl animate-pulse" />
+                    </>
+                  ) : (
+                    <>
+                      {/* Pensiun Toggle Button */}
+                      <button
+                        onClick={() => setActiveTab(activeTab === "pensiun" ? "semua" : "pensiun")}
+                        className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all duration-300 ${activeTab === "pensiun"
+                          ? "bg-blue-600 text-white border-blue-600 font-bold shadow-md shadow-blue-100 scale-[1.02]"
+                          : "bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-100/50"
+                          }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <div
+                            className={`w-2.5 h-2.5 rounded-full transition-colors ${activeTab === "pensiun" ? "bg-white" : "bg-blue-500"
+                              }`}
+                          />
+                          <span className="text-sm font-semibold">Pensiun</span>
+                        </div>
+                        <span className="font-bold text-sm">{count_pensiun}</span>
+                      </button>
+
+                      {/* Pangkat Toggle Button */}
+                      <button
+                        onClick={() => setActiveTab(activeTab === "pangkat" ? "semua" : "pangkat")}
+                        className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all duration-300 ${activeTab === "pangkat"
+                          ? "bg-purple-600 text-white border-purple-600 font-bold shadow-md shadow-purple-100 scale-[1.02]"
+                          : "bg-purple-50 text-purple-500 border-purple-100 hover:bg-purple-100/50"
+                          }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <div
+                            className={`w-2.5 h-2.5 rounded-full transition-colors ${activeTab === "pangkat" ? "bg-white" : "bg-purple-500"
+                              }`}
+                          />
+                          <span className="text-sm font-semibold">Kenaikan Pangkat</span>
+                        </div>
+                        <span className="font-bold text-sm">{count_pangkat}</span>
+                      </button>
+
+                      {/* Berkala Toggle Button */}
+                      <button
+                        onClick={() => setActiveTab(activeTab === "berkala" ? "semua" : "berkala")}
+                        className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all duration-300 ${activeTab === "berkala"
+                          ? "bg-amber-600 text-white border-amber-600 font-bold shadow-md shadow-amber-100 scale-[1.02]"
+                          : "bg-amber-50 text-amber-500 border-amber-100 hover:bg-amber-100/50"
+                          }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <div
+                            className={`w-2.5 h-2.5 rounded-full transition-colors ${activeTab === "berkala" ? "bg-white" : "bg-amber-500"
+                              }`}
+                          />
+                          <span className="text-sm font-semibold">Gaji Berkala</span>
+                        </div>
+                        <span className="font-bold text-sm">{count_berkala}</span>
+                      </button>
+
+                      {/* PPPK Toggle Button */}
+                      <button
+                        onClick={() => setActiveTab(activeTab === "pppk" ? "semua" : "pppk")}
+                        className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all duration-300 ${activeTab === "pppk"
+                          ? "bg-rose-600 text-white border-rose-600 font-bold shadow-md shadow-rose-100 scale-[1.02]"
+                          : "bg-rose-50 text-rose-500 border-rose-100 hover:bg-rose-100/50"
+                          }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <div
+                            className={`w-2.5 h-2.5 rounded-full transition-colors ${activeTab === "pppk" ? "bg-white" : "bg-rose-500"
+                              }`}
+                          />
+                          <span className="text-sm font-semibold">PPPK</span>
+                        </div>
+                        <span className="font-bold text-sm">{count_pppk}</span>
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
-
-              {/* Clickable Legend Cards that sync with top tabs */}
-              <div className="space-y-3">
-                {/* Pensiun Toggle Button */}
-                <button
-                  onClick={() => setActiveTab(activeTab === "pensiun" ? "semua" : "pensiun")}
-                  className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all duration-300 ${activeTab === "pensiun"
-                    ? "bg-blue-600 text-white border-blue-600 font-bold shadow-md shadow-blue-100 scale-[1.02]"
-                    : "bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-100/50"
-                    }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <div
-                      className={`w-2.5 h-2.5 rounded-full transition-colors ${activeTab === "pensiun" ? "bg-white" : "bg-blue-500"
-                        }`}
-                    />
-                    <span className="text-sm font-semibold">Pensiun</span>
-                  </div>
-                  <span className="font-bold text-sm">{count_pensiun}</span>
-                </button>
-
-                {/* Pangkat Toggle Button */}
-                <button
-                  onClick={() => setActiveTab(activeTab === "pangkat" ? "semua" : "pangkat")}
-                  className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all duration-300 ${activeTab === "pangkat"
-                    ? "bg-purple-600 text-white border-purple-600 font-bold shadow-md shadow-purple-100 scale-[1.02]"
-                    : "bg-purple-50 text-purple-500 border-purple-100 hover:bg-purple-100/50"
-                    }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <div
-                      className={`w-2.5 h-2.5 rounded-full transition-colors ${activeTab === "pangkat" ? "bg-white" : "bg-purple-500"
-                        }`}
-                    />
-                    <span className="text-sm font-semibold">Kenaikan Pangkat</span>
-                  </div>
-                  <span className="font-bold text-sm">{count_pangkat}</span>
-                </button>
-
-                {/* Berkala Toggle Button */}
-                <button
-                  onClick={() => setActiveTab(activeTab === "berkala" ? "semua" : "berkala")}
-                  className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all duration-300 ${activeTab === "berkala"
-                    ? "bg-amber-600 text-white border-amber-600 font-bold shadow-md shadow-amber-100 scale-[1.02]"
-                    : "bg-amber-50 text-amber-500 border-amber-100 hover:bg-amber-100/50"
-                    }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <div
-                      className={`w-2.5 h-2.5 rounded-full transition-colors ${activeTab === "berkala" ? "bg-white" : "bg-amber-500"
-                        }`}
-                    />
-                    <span className="text-sm font-semibold">Gaji Berkala</span>
-                  </div>
-                  <span className="font-bold text-sm">{count_berkala}</span>
-                </button>
-
-                {/* PPPK Toggle Button */}
-                <button
-                  onClick={() => setActiveTab(activeTab === "pppk" ? "semua" : "pppk")}
-                  className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all duration-300 ${activeTab === "pppk"
-                    ? "bg-rose-600 text-white border-rose-600 font-bold shadow-md shadow-rose-100 scale-[1.02]"
-                    : "bg-rose-50 text-rose-500 border-rose-100 hover:bg-rose-100/50"
-                    }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <div
-                      className={`w-2.5 h-2.5 rounded-full transition-colors ${activeTab === "pppk" ? "bg-white" : "bg-rose-500"
-                        }`}
-                    />
-                    <span className="text-sm font-semibold">PPPK</span>
-                  </div>
-                  <span className="font-bold text-sm">{count_pppk}</span>
-                </button>
-              </div>
-            </div>
           </div>
         </div>
 
@@ -317,7 +326,7 @@ export const JatuhTempoSidebar: React.FC<JatuhTempoSidebarProps> = ({
 
           {/* HTML Table of Overdue Teachers */}
           <div className="flex-1 overflow-y-auto p-8 scrollbar-hide bg-white">
-            {filteredItems.length > 0 ? (
+            {isLoading || filteredItems.length > 0 ? (
               <>
                 <div className="w-full overflow-x-auto rounded-[2rem] border border-slate-100 shadow-sm bg-white">
                   <table className="w-full text-left border-collapse">
@@ -342,57 +351,79 @@ export const JatuhTempoSidebar: React.FC<JatuhTempoSidebarProps> = ({
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-50">
-                      {paginatedItems.map((item, idx) => (
-                        <tr key={idx} className="hover:bg-slate-50/50 transition-colors group">
-                          <td className="py-4 px-6 text-sm text-slate-400 font-medium text-center">
-                            {(currentPage - 1) * itemsPerPage + idx + 1}
-                          </td>
-                          {activeTab === "semua" && (
-                            <td className="py-4 px-6 text-sm">
-                              <div
-                                className={`px-3 py-1 rounded-xl text-xs font-bold border inline-block ${item.category === "Berkala"
-                                  ? "bg-amber-50 text-amber-600 border-amber-100"
-                                  : item.category === "Pangkat"
-                                    ? "bg-purple-50 text-purple-600 border-purple-100"
-                                    : item.category === "Pensiun"
-                                      ? "bg-blue-50 text-blue-600 border-blue-100"
-                                      : "bg-rose-50 text-rose-600 border-rose-100"
-                                  }`}
-                              >
-                                {item.category}
+                     <tbody className="divide-y divide-slate-50">
+                      {isLoading ? (
+                        [...Array(5)].map((_, idx) => (
+                          <tr key={idx} className="animate-pulse border-b border-slate-50">
+                            <td className="py-4 px-6 text-center"><Skeleton className="h-4 w-6 mx-auto" /></td>
+                            {activeTab === "semua" && (
+                              <td className="py-4 px-6"><Skeleton className="h-6 w-16 rounded-xl" /></td>
+                            )}
+                            <td className="py-4 px-6">
+                              <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-xl bg-slate-100 shrink-0" />
+                                <div className="flex flex-col gap-1.5 flex-1">
+                                  <Skeleton className="h-4 w-28" />
+                                  <Skeleton className="h-3 w-16" />
+                                </div>
                               </div>
+                            </td>
+                            <td className="py-4 px-6"><Skeleton className="h-4 w-36" /></td>
+                            <td className="py-4 px-6"><Skeleton className="h-4 w-24" /></td>
+                          </tr>
+                        ))
+                      ) : (
+                        paginatedItems.map((item, idx) => (
+                          <tr key={idx} className="hover:bg-slate-50/50 transition-colors group">
+                            <td className="py-4 px-6 text-sm text-slate-400 font-medium text-center">
+                              {(currentPage - 1) * itemsPerPage + idx + 1}
+                            </td>
+                            {activeTab === "semua" && (
+                              <td className="py-4 px-6 text-sm">
+                                <div
+                                  className={`px-3 py-1 rounded-xl text-xs font-bold border inline-block ${item.category === "Berkala"
+                                    ? "bg-amber-50 text-amber-600 border-amber-100"
+                                    : item.category === "Pangkat"
+                                      ? "bg-purple-50 text-purple-600 border-purple-100"
+                                      : item.category === "Pensiun"
+                                        ? "bg-blue-50 text-blue-600 border-blue-100"
+                                        : "bg-rose-50 text-rose-600 border-rose-100"
+                                    }`}
+                                >
+                                  {item.category}
+                                </div>
+
+                              </td>
+                            )}
+                            <td className="py-4 px-6">
+                              <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-rose-50 group-hover:text-rose-500 transition-all shrink-0">
+                                  <User className="w-5 h-5" />
+                                </div>
+                                <div className="">
+                                  <div className="font-bold text-slate-800 text-sm group-hover:text-rose-600 transition-colors">
+                                    {item.name}
+                                  </div>
+                                  <div className="text-sm">
+
+                                    {item.last_date || "-"}
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-4 px-6 text-sm text-slate-500 font-medium">{item.school}</td>
+                            <td className="py-4 px-6 text-sm">
+                              <div className="font-bold text-rose-500  whitespace-nowrap">
+                                {item.days_until < 0
+                                  ? `Terlewat ${Math.abs(item.days_until)} Hari`
+                                  : "Jatuh Tempo Hari Ini"}
+                              </div>
+                              {item.deadline_at}
 
                             </td>
-                          )}
-                          <td className="py-4 px-6">
-                            <div className="flex items-center gap-3">
-                              <div className="w-9 h-9 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-rose-50 group-hover:text-rose-500 transition-all shrink-0">
-                                <User className="w-5 h-5" />
-                              </div>
-                              <div className="">
-                                <div className="font-bold text-slate-800 text-sm group-hover:text-rose-600 transition-colors">
-                                  {item.name}
-                                </div>
-                                <div className="text-sm">
-
-                                  {item.last_date || "-"}
-                                </div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="py-4 px-6 text-sm text-slate-500 font-medium">{item.school}</td>
-                          <td className="py-4 px-6 text-sm">
-                            <div className="font-bold text-rose-500  whitespace-nowrap">
-                              {item.days_until < 0
-                                ? `Terlewat ${Math.abs(item.days_until)} Hari`
-                                : "Jatuh Tempo Hari Ini"}
-                            </div>
-                            {item.deadline_at}
-
-                          </td>
-                        </tr>
-                      ))}
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>

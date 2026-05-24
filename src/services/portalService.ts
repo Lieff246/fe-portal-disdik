@@ -78,7 +78,7 @@ export const PortalService = {
     return response.data;
   },
 
-  getRegionDetail: async (params?: { department_id?: string; slug?: string; month?: string; range?: string }) => {
+  getRegionDetail: async (params?: { department_id?: string; slug?: string; month?: string; range?: string; include_details?: string }) => {
     const response = await axios.get(`${API_REKAP_URL}/v1/portal/region-detail`, { params });
     return response.data.data;
   },

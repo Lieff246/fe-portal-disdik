@@ -57,16 +57,18 @@ const RANK_COLORS = [
   "#2563eb",
 ];
 
-const thisToRoman = (num: any) => {
-  const map: Record<string, string> = {
-    1: "I",
-    2: "II",
-    3: "III",
-    4: "IV",
-    5: "V",
-    6: "VI",
-  };
-  return map[num] || num;
+
+const getRegionNumber = (name: string): string => {
+  const match = name?.match(/\d+/);
+  if (match) return match[0];
+  const nameUpper = name?.toUpperCase() || "";
+  if (nameUpper.includes("WILAYAH I") || nameUpper.includes("WILAYAH 1")) return "1";
+  if (nameUpper.includes("WILAYAH II") || nameUpper.includes("WILAYAH 2")) return "2";
+  if (nameUpper.includes("WILAYAH III") || nameUpper.includes("WILAYAH 3")) return "3";
+  if (nameUpper.includes("WILAYAH IV") || nameUpper.includes("WILAYAH 4")) return "4";
+  if (nameUpper.includes("WILAYAH V") || nameUpper.includes("WILAYAH 5")) return "5";
+  if (nameUpper.includes("WILAYAH VI") || nameUpper.includes("WILAYAH 6")) return "6";
+  return "1";
 };
 
 // Component to handle map bounds focusing dynamically when center or zoom changes
@@ -95,7 +97,6 @@ const ChangeMapView = ({
 
 export const SulawesiMap: React.FC<MapProps> = ({
   markers = [],
-  onViewDetail,
   onSchoolClick,
   onPopupClose,
   layer = "base",
@@ -107,7 +108,6 @@ export const SulawesiMap: React.FC<MapProps> = ({
   selectedSchool,
 }) => {
   const [cabdisGeoData, setCabdisGeoData] = useState<Record<number, any>>({});
-  const [hoveredCabdis, setHoveredCabdis] = useState<string | null>(null);
   // const [setActiveMarkerId] = useState<string | number | null>(null);
 
   useEffect(() => {
@@ -149,7 +149,6 @@ export const SulawesiMap: React.FC<MapProps> = ({
 
   const getCabdisStyle = (cabdisName: string) => {
     const rank = cabdisRanks[cabdisName.toUpperCase()];
-    const isHovered = hoveredCabdis === cabdisName;
     const baseColor =
       rank !== undefined
           ? RANK_COLORS[rank] || RANK_COLORS[RANK_COLORS.length - 1]
@@ -157,56 +156,13 @@ export const SulawesiMap: React.FC<MapProps> = ({
 
     return {
       color: onlyShowId ? "#3b82f6" : "#ffffff",
-      weight: onlyShowId ? 1.5 : (isHovered ? 3 : 1.5),
-      fillColor: onlyShowId ? "#3b82f6" : (isHovered ? "#1e40af" : baseColor),
-      fillOpacity: onlyShowId ? 0.08 : (isHovered ? 0.9 : 1),
+      weight: 1.5,
+      fillColor: onlyShowId ? "#3b82f6" : baseColor,
+      fillOpacity: onlyShowId ? 0.08 : 1,
       className: "transition-all duration-300",
     };
   };
 
-  const onEachFeature = (feature: any, layer: any, cabdisData: any) => {
-    console.log(feature);
-    if (!cabdisData) return;
-    layer.on({
-      mouseover: (e: any) => {
-        setHoveredCabdis(cabdisData.name);
-        const l = e.target;
-        l.setStyle({
-          weight: 3,
-          fillOpacity: 0.8,
-        });
-      },
-      mouseout: (e: any) => {
-        setHoveredCabdis(null);
-        const l = e.target;
-        l.setStyle(getCabdisStyle(cabdisData.name));
-      },
-      click: () => {
-        // setActiveMarkerId(cabdisData.id);
-        onViewDetail?.(cabdisData);
-      },
-    });
-
-    layer.bindTooltip(
-      `
-      <div class="px-3 py-2 bg-white/95 backdrop-blur-md rounded-xl shadow-xl border border-slate-100">
-        <p class="text-[11px] font-black text-blue-600 uppercase tracking-wider mb-0.5">Wilayah Kerja</p>
-        <p class="text-sm font-bold text-slate-800">${cabdisData.name}</p>
-        <div class="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between gap-4">
-           <div class="flex flex-col">
-              <span class="text-[9px] text-slate-400 uppercase font-bold">Guru</span>
-              <span class="text-xs font-black text-slate-700">${cabdisData.stats?.teachers || 0}</span>
-           </div>
-           <div class="flex flex-col text-right">
-              <span class="text-[9px] text-slate-400 uppercase font-bold">Sekolah</span>
-              <span class="text-xs font-black text-slate-700">${cabdisData.stats?.schools || 0}</span>
-           </div>
-        </div>
-      </div>
-    `,
-      { sticky: true, className: "custom-map-tooltip" },
-    );
-  };
 
   const selectedConfig = onlyShowId ? CABANG_DATA.find((c) => c.id === onlyShowId) : null;
   const mapCenter = customCenter || (selectedConfig ? selectedConfig.mapCenter as [number, number] : [-4.1, 121.0] as [number, number]);
@@ -243,24 +199,13 @@ export const SulawesiMap: React.FC<MapProps> = ({
                 return null;
               }
               const cabdisName = `CABANG DINAS WILAYAH ${num}`;
-              const cabdisData = (markers || []).find(
-                (m) =>
-                  m.name?.toUpperCase() === cabdisName ||
-                  m.name?.toUpperCase().includes(`WILAYAH ${num}`) ||
-                  m.name?.toUpperCase().includes(`WILAYAH ${thisToRoman(num)}`),
-              );
 
               return (
                 <GeoJSON
                   key={`cabdis-${num}-${(markers || []).length}`}
                   data={geo}
                   style={() => getCabdisStyle(cabdisName)}
-                  interactive={!onlyShowId}
-                  onEachFeature={(f, l) => {
-                    if (!onlyShowId) {
-                      onEachFeature(f, l, cabdisData);
-                    }
-                  }}
+                  interactive={false}
                 />
               );
             })}
@@ -271,15 +216,39 @@ export const SulawesiMap: React.FC<MapProps> = ({
                 key={`marker-${m.id}`}
                 position={[m.lat, m.lng]}
                 icon={yellowDotIcon}
-                eventHandlers={{
-                  click: () => {
-                    onViewDetail?.(m);
-                  },
-                }}
               >
                 <Tooltip direction="top" offset={[0, -10]} opacity={1} className="custom-map-tooltip-simple">
                   <span className="font-bold text-slate-700">{m.name}</span>
                 </Tooltip>
+
+                <Popup>
+                  <div className="p-3 min-w-[220px] flex flex-col gap-2 font-poppins text-slate-800">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Cabang Dinas</span>
+                      <span className="text-sm font-extrabold text-slate-800 leading-snug">{m.name}</span>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-2 py-2 border-y border-slate-100 text-xs">
+                      <div className="flex flex-col">
+                        <span className="text-[9px] text-slate-400 font-bold uppercase">Total Sekolah</span>
+                        <span className="font-extrabold text-slate-700">{m.stats?.schools || 0}</span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[9px] text-slate-400 font-bold uppercase">Total Guru</span>
+                        <span className="font-extrabold text-slate-700">{m.stats?.teachers || 0}</span>
+                      </div>
+                    </div>
+
+                    <a
+                      href={`/cabdis-${getRegionNumber(m.name)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-center text-xs shadow-lg shadow-blue-200 transition-all flex items-center justify-center gap-1.5 cursor-pointer no-underline border border-transparent"
+                    >
+                      Kunjungi Landing Page
+                    </a>
+                  </div>
+                </Popup>
               </Marker>
             ))}
 
@@ -331,6 +300,9 @@ export const SulawesiMap: React.FC<MapProps> = ({
         .leaflet-container { 
           background: transparent !important; 
           pointer-events: ${layer === "base" ? "none" : (layer === "interactive" && !onlyShowId ? "none" : "auto")} !important;
+        }
+        .leaflet-popup {
+          pointer-events: auto !important;
         }
         .custom-map-tooltip {
           background: transparent !important;

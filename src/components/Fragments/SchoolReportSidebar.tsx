@@ -15,12 +15,16 @@ interface SchoolReportSidebarProps {
   isOpen: boolean;
   onClose: () => void;
   currentMonth: string;
+  cabdisSlug?: string;
+  departmentId?: string;
 }
 
 export const SchoolReportSidebar: React.FC<SchoolReportSidebarProps> = ({
   isOpen,
   onClose,
   currentMonth,
+  cabdisSlug,
+  departmentId,
 }) => {
   const [rawReports, setRawReports] = useState<any[]>([]);
   const [cachedMonth, setCachedMonth] = useState("");
@@ -65,6 +69,19 @@ export const SchoolReportSidebar: React.FC<SchoolReportSidebarProps> = ({
       }
     }
   }, [isOpen, currentMonth]);
+
+  // Automatically select active Cabdis based on slug or department ID
+  useEffect(() => {
+    if (isOpen && cabdisList.length > 0 && (cabdisSlug || departmentId)) {
+      const match = cabdisList.find((c: any) => 
+        (cabdisSlug && c.slug === cabdisSlug) || 
+        (departmentId && c.id === departmentId)
+      );
+      if (match) {
+        setSelectedCabdis(match.id);
+      }
+    }
+  }, [isOpen, cabdisList, cabdisSlug, departmentId]);
 
   const filteredReports = useMemo(() => {
     return rawReports.filter((item: any) => {
@@ -215,23 +232,25 @@ export const SchoolReportSidebar: React.FC<SchoolReportSidebarProps> = ({
             />
           </div>
 
-          <div className="flex items-center gap-3 p-1.5 bg-slate-100 rounded-2xl border border-slate-200 overflow-x-auto scrollbar-hide">
-            <button
-              onClick={() => setSelectedCabdis("")}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${selectedCabdis === "" ? "bg-white text-blue-600 shadow-sm" : "text-slate-400"}`}
-            >
-              Semua Wilayah
-            </button>
-            {cabdisList.map((cab, idx) => (
+          {!(cabdisSlug || departmentId) && (
+            <div className="flex items-center gap-3 p-1.5 bg-slate-100 rounded-2xl border border-slate-200 overflow-x-auto scrollbar-hide">
               <button
-                key={idx}
-                onClick={() => setSelectedCabdis(cab.id)}
-                className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${selectedCabdis === cab.id ? "bg-white text-blue-600 shadow-sm" : "text-slate-400"}`}
+                onClick={() => setSelectedCabdis("")}
+                className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${selectedCabdis === "" ? "bg-white text-blue-600 shadow-sm" : "text-slate-400"}`}
               >
-                {cab.name}
+                Semua Wilayah
               </button>
-            ))}
-          </div>
+              {cabdisList.map((cab, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setSelectedCabdis(cab.id)}
+                  className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${selectedCabdis === cab.id ? "bg-white text-blue-600 shadow-sm" : "text-slate-400"}`}
+                >
+                  {cab.name}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* List */}

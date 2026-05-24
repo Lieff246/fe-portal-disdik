@@ -26,19 +26,19 @@ export const GeneralDataSection: React.FC<Props> = ({ data }) => {
       color: "emerald",
     },
     {
-      label: "Total Guru",
+      label: "Tenaga Pendidik",
       value: data?.total_guru || 0,
       icon: "mdi:school-outline",
       color: "emerald",
     },
     {
-      label: "Total Tenaga Kependidikan",
+      label: "Tenaga Kependidikan",
       value: data?.total_tendik || 0,
       icon: "clarity:administrator-line",
       color: "emerald",
     },
     {
-      label: "Total Pegawai",
+      label: "Pegawai Dinas",
       value: data?.total_pegawai || 0,
       icon: "clarity:administrator-line",
       color: "emerald",

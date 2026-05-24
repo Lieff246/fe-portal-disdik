@@ -14,6 +14,8 @@ import { JatuhTempoSidebar } from "@/components/Fragments/JatuhTempoSidebar";
 import { NeracaSidebar } from "@/components/Fragments/NeracaSidebar";
 import { SchoolReportSidebar } from "@/components/Fragments/SchoolReportSidebar";
 
+import { Skeleton } from "@/components/Elements/Skeleton/Skeleton";
+
 export const CabangDinas = ({ slug: propSlug }: { slug?: string }) => {
   const { slug: paramSlug } = useParams();
   const slug = propSlug || paramSlug;
@@ -70,7 +72,8 @@ export const CabangDinas = ({ slug: propSlug }: { slug?: string }) => {
   // 1. Fetch detailed data when slug or projection filters change
   useEffect(() => {
     if (slug) {
-      fetchDetail();
+      // By default, fetch lightweight summary stats without huge employee details list
+      fetchDetail(false);
     }
   }, [slug, localMonth, localRange]);
 
@@ -79,13 +82,14 @@ export const CabangDinas = ({ slug: propSlug }: { slug?: string }) => {
     fetchLandingData();
   }, []);
 
-  const fetchDetail = async () => {
+  const fetchDetail = async (includeDetails = false) => {
     setLoading(true);
     try {
       const res = await PortalService.getRegionDetail({
         slug: slug!,
         month: localMonth,
         range: localRange,
+        include_details: includeDetails ? "1" : "0",
       });
       setData(res);
     } catch (error) {
@@ -94,6 +98,16 @@ export const CabangDinas = ({ slug: propSlug }: { slug?: string }) => {
       setLoading(false);
     }
   };
+
+  // Fetch details on demand only when a sidebar is opened and details aren't in memory
+  const hasDetails = !!(data?.projections?.proyeksi?.data_category || data?.projections?.jatuh_tempo?.detail);
+  const shouldFetchDetails = !!activeCategoryDetail || !!activeJatuhTempoDetail;
+
+  useEffect(() => {
+    if (slug && shouldFetchDetails && !hasDetails && !loading) {
+      fetchDetail(true);
+    }
+  }, [slug, shouldFetchDetails, hasDetails]);
 
   const fetchLandingData = async () => {
     try {
@@ -119,6 +133,19 @@ export const CabangDinas = ({ slug: propSlug }: { slug?: string }) => {
   // Redirect to home jika ID Cabdis tidak dikenal atau gagal terurai
   if (!numericId || !cabangConfig) {
     return <Navigate to="/" replace />;
+  }
+
+  if (loading && !data) {
+    return (
+      <div className="w-screen h-screen p-10 bg-gray-50 flex flex-col gap-6">
+        <Skeleton className="w-full h-[60vh] rounded-[40px] animate-pulse" />
+        <div className="flex gap-6 h-[30vh] animate-pulse">
+          <Skeleton className="w-1/3 h-full" />
+          <Skeleton className="w-1/3 h-full" />
+          <Skeleton className="w-1/3 h-full" />
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -165,6 +192,7 @@ export const CabangDinas = ({ slug: propSlug }: { slug?: string }) => {
         isOpen={isSchoolReportsOpen}
         onClose={() => setIsSchoolReportsOpen(false)}
         currentMonth={localMonth}
+        cabdisSlug={slug}
       />
 
       <SchoolDetailSidebar
@@ -331,7 +359,7 @@ export const CabangDinas = ({ slug: propSlug }: { slug?: string }) => {
                                 setSelectedSchoolForDetail(school);
                                 setIsSchoolDetailOpen(true);
                               }}
-                              className="bg-slate-50/80 hover:bg-slate-100 text-slate-600 text-[10px] font-black uppercase tracking-wider py-2.5 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm border border-slate-100"
+                              className="hidden bg-slate-50/80 hover:bg-slate-100 text-slate-600 text-[10px] font-black uppercase tracking-wider py-2.5 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm border border-slate-100"
                             >
                               <Eye className="w-3.5 h-3.5" />
                               <span>Klik Detail</span>
@@ -344,10 +372,10 @@ export const CabangDinas = ({ slug: propSlug }: { slug?: string }) => {
                   {data?.schools?.filter((s: any) =>
                     s.name?.toLowerCase().includes(schoolSearch.toLowerCase())
                   ).length === 0 && (
-                      <div className="py-10 text-center text-xs font-bold text-slate-400 uppercase tracking-widest">
-                        Tidak ada sekolah ditemukan
-                      </div>
-                    )}
+                    <div className="py-10 text-center text-xs font-bold text-slate-400 uppercase tracking-widest">
+                      Tidak ada sekolah ditemukan
+                    </div>
+                  )}
                 </div>
 
               </div>
@@ -430,17 +458,6 @@ export const CabangDinas = ({ slug: propSlug }: { slug?: string }) => {
         </div>
       </main>
 
-      {/* Loading Overlay */}
-      {loading && !data && (
-        <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-[200] flex items-center justify-center">
-          <div className="flex flex-col items-center gap-4">
-            <div className="w-12 h-12 border-4 border-slate-100 border-t-blue-600 rounded-full animate-spin" />
-            <p className="text-xs font-black text-slate-400 uppercase tracking-widest animate-pulse">
-              Memuat Data Cabang Dinas...
-            </p>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

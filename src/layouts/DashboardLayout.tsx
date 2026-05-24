@@ -9,9 +9,9 @@ import { PortalHeroSection } from "@/components/Sections/PortalHeroSection";
 import { GtkDetailSidebar } from "@/components/Analytics/GtkDetailSidebar";
 import { NeracaSidebar } from "@/components/Fragments/NeracaSidebar";
 import { CategoryProjectionSidebar } from "@/components/Fragments/CategoryProjectionSidebar";
-import { RegionProjectionSidebar } from "@/components/Fragments/RegionProjectionSidebar";
 import { SchoolReportSidebar } from "@/components/Fragments/SchoolReportSidebar";
 import { JatuhTempoSidebar } from "@/components/Fragments/JatuhTempoSidebar";
+import { RegionProjectionSidebar } from "@/components/Fragments/RegionProjectionSidebar";
 
 interface DashboardLayoutProps {
   landingData?: GtkLandingData;
@@ -97,7 +97,7 @@ export const DashboardLayout = ({
   };
 
   const handleOpenRegionDetail = (marker: any) => {
-    setSelectedCabdisForSummary(marker);
+    console.log("Region clicked:", marker);
   };
 
   const handleOpenCategoryDetail = (category: string) => {
