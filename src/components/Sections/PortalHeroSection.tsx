@@ -15,6 +15,7 @@ interface Props {
     month?: number,
   ) => void;
   onOpenProyeksiDetail?: (category: string) => void;
+  onOpenJatuhTempoDetail?: (category: string) => void;
   onOpenSchoolReports?: () => void;
   proyeksiLoading?: boolean;
   currentMonth?: string;
@@ -27,17 +28,13 @@ export const PortalHeroSection: React.FC<Props> = ({
   onOpenNeracaRekap,
   onProyeksiFilterChange,
   onOpenProyeksiDetail,
+  onOpenJatuhTempoDetail,
   onOpenSchoolReports,
   proyeksiLoading,
   currentMonth,
 }) => {
-  console.log(portalData);
-  const projections = portalData?.projections || {
-    berkala: { target_count: 0, real_count: 0, overdue_count: 0 },
-    pangkat: { target_count: 0, real_count: 0, overdue_count: 0 },
-    pns: { target_count: 0, real_count: 0, overdue_count: 0 },
-    pppk: { target_count: 0, real_count: 0, overdue_count: 0 },
-  };
+  // console.log(portalData);
+
 
   const schoolSummary = portalData?.cards?.school_reports;
 
@@ -80,9 +77,10 @@ export const PortalHeroSection: React.FC<Props> = ({
         <div className="flex-[3] flex flex-col gap-6">
           <div className="w-full lg:w-1/3">
             <ProyeksiCard
-              projections={projections}
+              projections={portalData?.projections}
               onFilterChange={onProyeksiFilterChange}
               onOpenDetail={onOpenProyeksiDetail}
+              onOpenJatuhTempoDetail={onOpenJatuhTempoDetail}
               isLoading={proyeksiLoading}
             />
           </div>

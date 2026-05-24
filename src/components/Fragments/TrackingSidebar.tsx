@@ -53,7 +53,7 @@ export const TrackingSidebar: React.FC<TrackingSidebarProps> = ({ isOpen, onClos
 
       {/* Sidebar Panel */}
       <div
-        className={`fixed inset-y-0 right-0 w-full max-w-[500px] bg-white shadow-2xl z-[70] transform transition-transform duration-500 ease-in-out flex flex-col ${isOpen ? 'translate-x-0' : 'translate-x-[100%]'
+        className={`fixed inset-y-0 right-0 w-full max-w-[500px] bg-white shadow-2xl z-[70] transform transition-transform duration-500 ease-in-out flex flex-col ${isOpen ? 'translate-x-0' : 'translate-x-[110%]'
           }`}
       >
         <div className="flex items-center justify-between px-8 py-6 border-b border-gray-100">

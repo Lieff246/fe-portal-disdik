@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { TrackingSidebar } from "@/components/Fragments/TrackingSidebar";
+import { PortalService } from "@/services/portalService";
 import { DetailSidebar } from "@/components/Fragments/DetailSidebar";
 import { ServiceDetailModal } from "@/components/Fragments/ServiceDetailModal";
 import { GtkDrilldownSidebar } from "@/components/Fragments/GtkDrilldownSidebar";
@@ -10,6 +11,7 @@ import { NeracaSidebar } from "@/components/Fragments/NeracaSidebar";
 import { CategoryProjectionSidebar } from "@/components/Fragments/CategoryProjectionSidebar";
 import { RegionProjectionSidebar } from "@/components/Fragments/RegionProjectionSidebar";
 import { SchoolReportSidebar } from "@/components/Fragments/SchoolReportSidebar";
+import { JatuhTempoSidebar } from "@/components/Fragments/JatuhTempoSidebar";
 
 interface DashboardLayoutProps {
   landingData?: GtkLandingData;
@@ -57,6 +59,34 @@ export const DashboardLayout = ({
   const [activeCategoryDetail, setActiveCategoryDetail] = useState<
     string | null
   >(null);
+  const [activeJatuhTempoDetail, setActiveJatuhTempoDetail] = useState<
+    string | null
+  >(null);
+
+  const [detailedProjections, setDetailedProjections] = useState<any>(null);
+  const [detailedProjectionsLoading, setDetailedProjectionsLoading] = useState(false);
+
+  // Lazy load detailed projections when sidebars are opened
+  useEffect(() => {
+    const fetchDetailedProjections = async () => {
+      if ((activeCategoryDetail || activeJatuhTempoDetail) && !detailedProjections && !detailedProjectionsLoading) {
+        setDetailedProjectionsLoading(true);
+        try {
+          const res = await PortalService.getProjections();
+          if (res?.status === "success" && res?.data) {
+            setDetailedProjections(res.data);
+          } else {
+            setDetailedProjections(res?.data || res || {});
+          }
+        } catch (error) {
+          console.error("Failed to fetch detailed projections:", error);
+        } finally {
+          setDetailedProjectionsLoading(false);
+        }
+      }
+    };
+    fetchDetailedProjections();
+  }, [activeCategoryDetail, activeJatuhTempoDetail, detailedProjections, detailedProjectionsLoading]);
 
   const initialServiceTab = "guru_sma";
 
@@ -72,6 +102,10 @@ export const DashboardLayout = ({
 
   const handleOpenCategoryDetail = (category: string) => {
     setActiveCategoryDetail(category);
+  };
+
+  const handleOpenJatuhTempoDetail = (category: string) => {
+    setActiveJatuhTempoDetail(category);
   };
 
   return (
@@ -123,21 +157,29 @@ export const DashboardLayout = ({
         onFilterChange={onFilterChange || (() => { })}
       />
 
-      {/* Projection Sidebars */}
       <CategoryProjectionSidebar
         isOpen={!!activeCategoryDetail}
         onClose={() => setActiveCategoryDetail(null)}
-        data={portalData?.projections?.monthly || portalData?.projections} // Fallback to root if monthly not explicitly wrapped
+        data={detailedProjections?.proyeksi?.data_category?.kurang_dari_90 || portalData?.projections?.proyeksi?.data_category?.kurang_dari_90 || {}}
         initialCategory={activeCategoryDetail || "berkala"}
         currentMonth={currentMonth}
         onMonthChange={handleMonthChange}
-        isLoading={proyeksiLoading}
+        isLoading={detailedProjectionsLoading || proyeksiLoading}
+      />
+
+      <JatuhTempoSidebar
+        isOpen={!!activeJatuhTempoDetail}
+        onClose={() => setActiveJatuhTempoDetail(null)}
+        data={detailedProjections?.jatuh_tempo || portalData?.projections?.jatuh_tempo || {}}
+        initialCategory={activeJatuhTempoDetail || "semua"}
+        isLoading={detailedProjectionsLoading || proyeksiLoading}
       />
 
       <RegionProjectionSidebar
         isOpen={!!selectedCabdisForSummary}
         onClose={() => setSelectedCabdisForSummary(null)}
         regionId={selectedCabdisForSummary?.id}
+        regionSlug={selectedCabdisForSummary?.slug}
         regionName={selectedCabdisForSummary?.name}
         currentMonth={currentMonth}
         onMonthChange={handleMonthChange}
@@ -170,6 +212,7 @@ export const DashboardLayout = ({
           onOpenNeracaRekap={() => setIsNeracaRekapOpen(true)}
           onProyeksiFilterChange={onProyeksiFilterChange}
           onOpenProyeksiDetail={handleOpenCategoryDetail}
+          onOpenJatuhTempoDetail={handleOpenJatuhTempoDetail}
           onOpenSchoolReports={() => setIsSchoolReportsOpen(true)}
           proyeksiLoading={proyeksiLoading}
           currentMonth={currentMonth}

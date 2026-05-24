@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { X, Map as MapIcon, School, Search } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import {
   MapContainer,
   TileLayer,
@@ -45,6 +46,7 @@ interface RegionProjectionSidebarProps {
   isOpen: boolean;
   onClose: () => void;
   regionId: string | null;
+  regionSlug?: string | null;
   regionName: string;
   currentMonth: string;
   onMonthChange?: (newMonth: string) => void;
@@ -56,10 +58,12 @@ export const RegionProjectionSidebar: React.FC<
   isOpen,
   onClose,
   regionId,
+  regionSlug,
   regionName,
   currentMonth,
   onMonthChange,
 }) => {
+    const navigate = useNavigate();
     const [data, setData] = useState<any>(null);
     const [loading, setLoading] = useState(false);
     const [geoData, setGeoData] = useState<any>(null);
@@ -87,6 +91,7 @@ export const RegionProjectionSidebar: React.FC<
       try {
         const res = await PortalService.getRegionDetail({
           department_id: regionId!,
+          slug: regionSlug || undefined,
           month: localMonth,
           range: localRange,
         });
@@ -141,7 +146,7 @@ export const RegionProjectionSidebar: React.FC<
 
     return (
       <div
-        className={`fixed inset-y-0 right-0 w-[95%] bg-[#F8FCFF] shadow-2xl z-[150] transform transition-transform duration-500 ease-in-out border-l border-slate-100 flex flex-col ${isOpen ? "translate-x-0" : "translate-x-full"}`}
+        className={`fixed inset-y-0 right-0 w-[95%] bg-[#F8FCFF] shadow-2xl z-[150] transform transition-transform duration-500 ease-in-out border-l border-slate-100 flex flex-col ${isOpen ? "translate-x-0" : "translate-x-[110%]"}`}
       >
         {/* Header */}
         <div className="px-8 py-6 border-b border-white bg-white/80 backdrop-blur-md flex items-center justify-between shrink-0">
@@ -150,8 +155,20 @@ export const RegionProjectionSidebar: React.FC<
               <MapIcon className="w-6 h-6" />
             </div>
             <div>
-              <div className="text-xl font-bold">{regionName}</div>
-              <div className="flex items-center gap-3">Kota Palu, Kab. Sigi</div>
+              <div className="flex items-center gap-3">
+                <span className="text-xl font-bold">{regionName}</span>
+                <button
+                  onClick={() => {
+                    onClose();
+                    const pathNum = regionSlug ? regionSlug.replace("cabdis-", "") : (regionId ? regionId.split("-")[1]?.replace(/^0+/, "") : "");
+                    navigate(`/cabdis-${pathNum || "1"}?name=${encodeURIComponent(regionName)}`);
+                  }}
+                  className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-full text-xs font-bold transition-all shadow-md shadow-blue-500/10 cursor-pointer flex items-center justify-center"
+                >
+                  Kunjungi
+                </button>
+              </div>
+              <div className="flex items-center gap-3 text-xs text-slate-400 mt-1">Dinas Pendidikan Provinsi Sulawesi Tengah</div>
             </div>
           </div>
           <button

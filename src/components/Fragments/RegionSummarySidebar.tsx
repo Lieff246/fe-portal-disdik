@@ -34,7 +34,7 @@ export const RegionSummarySidebar: React.FC<RegionSummarySidebarProps> = ({
   const total = recap.ideal + recap.kekurangan + recap.kelebihan;
 
   return (
-    <div className={`fixed inset-y-0 right-0 w-[450px] bg-white/95 backdrop-blur-xl shadow-2xl z-[100] transform transition-transform duration-500 ease-in-out border-l border-slate-100 ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+    <div className={`fixed inset-y-0 right-0 w-[450px] bg-white/95 backdrop-blur-xl shadow-2xl z-[100] transform transition-transform duration-500 ease-in-out border-l border-slate-100 ${isOpen ? 'translate-x-0' : 'translate-x-[110%]'}`}>
       <div className="h-full flex flex-col">
         <div className="p-8 border-b border-slate-100 flex items-center justify-between">
             <div>

@@ -91,7 +91,7 @@ export const NeracaSidebar: React.FC<NeracaSidebarProps> = ({ isOpen, onClose, i
     };
 
     return (
-        <div className={`fixed inset-y-0 left-0 w-full bg-white shadow-2xl z-[1000] transform transition-transform duration-500 ease-in-out border-r border-slate-100 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className={`fixed inset-y-0 left-0 w-full bg-white shadow-2xl z-[1000] transform transition-transform duration-500 ease-in-out border-r border-slate-100 ${isOpen ? 'translate-x-0' : '-translate-x-[110%]'}`}>
 
             {/* Background Image Layer - Opacity dihilangkan agar tampil 100% */}
             <div

@@ -22,7 +22,8 @@ export const SchoolReportSidebar: React.FC<SchoolReportSidebarProps> = ({
   onClose,
   currentMonth,
 }) => {
-  const [reports, setReports] = useState<any[]>([]);
+  const [rawReports, setRawReports] = useState<any[]>([]);
+  const [cachedMonth, setCachedMonth] = useState("");
   const [summary, setSummary] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
@@ -34,11 +35,10 @@ export const SchoolReportSidebar: React.FC<SchoolReportSidebarProps> = ({
     try {
       const res = await PortalService.getSchoolReports({
         month: currentMonth,
-        department_id: selectedCabdis,
-        search: search,
       });
-      setReports(res.data);
+      setRawReports(res.data || []);
       setSummary(res.summary);
+      setCachedMonth(currentMonth);
     } catch (error) {
       console.error("Failed to fetch reports", error);
     } finally {
@@ -57,12 +57,44 @@ export const SchoolReportSidebar: React.FC<SchoolReportSidebarProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      fetchReports();
+      if (rawReports.length === 0 || cachedMonth !== currentMonth) {
+        fetchReports();
+      }
       if (cabdisList.length === 0) {
         fetchCabdis();
       }
     }
-  }, [isOpen, selectedCabdis, search, currentMonth]);
+  }, [isOpen, currentMonth]);
+
+  const filteredReports = useMemo(() => {
+    return rawReports.filter((item: any) => {
+      if (selectedCabdis && item.id_cabdis !== selectedCabdis) {
+        return false;
+      }
+      if (search && !item.school_name.toLowerCase().includes(search.toLowerCase())) {
+        return false;
+      }
+      return true;
+    });
+  }, [rawReports, selectedCabdis, search]);
+
+  const filteredSummary = useMemo(() => {
+    if (!summary) return null;
+    if (!selectedCabdis && !search) {
+      return summary;
+    }
+    const total = filteredReports.length;
+    const finished = filteredReports.filter((item: any) => item.status === "finished").length;
+    const pending = total - finished;
+    const percentage = total > 0 ? parseFloat(((finished / total) * 100).toFixed(2)) : 0;
+    return {
+      total,
+      finished,
+      pending,
+      percentage,
+      month: summary.month,
+    };
+  }, [summary, filteredReports, selectedCabdis, search]);
 
   const monthLabel = useMemo(() => {
     if (!currentMonth) return "";
@@ -86,7 +118,7 @@ export const SchoolReportSidebar: React.FC<SchoolReportSidebarProps> = ({
 
   return (
     <div
-      className={`fixed inset-y-0 right-0 w-[95%] bg-white shadow-2xl z-[150] transform transition-transform duration-500 ease-in-out border-l border-slate-100 flex flex-col ${isOpen ? "translate-x-0" : "translate-x-full"}`}
+      className={`fixed inset-y-0 right-0 w-[95%] bg-white shadow-2xl z-[150] transform transition-transform duration-500 ease-in-out border-l border-slate-100 flex flex-col ${isOpen ? "translate-x-0" : "translate-x-[110%]"}`}
     >
       <div className="p-8 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
         <div>
@@ -105,7 +137,7 @@ export const SchoolReportSidebar: React.FC<SchoolReportSidebarProps> = ({
 
       <div className="flex-1 overflow-y-auto p-8 scrollbar-hide space-y-8">
         {/* Mini Progress */}
-        {summary && (
+        {filteredSummary && (
           <div className="bg-slate-50/50 rounded-[2.5rem] p-8 border border-slate-100 flex flex-col gap-6">
             <div className="flex items-center justify-between">
               <div>
@@ -124,11 +156,11 @@ export const SchoolReportSidebar: React.FC<SchoolReportSidebarProps> = ({
             <div className="w-full h-5 bg-slate-200/50 rounded-full overflow-hidden flex">
               <div
                 className="h-full bg-emerald-500 transition-all duration-1000"
-                style={{ width: `${summary.percentage}%` }}
+                style={{ width: `${filteredSummary.percentage}%` }}
               />
               <div
                 className="h-full bg-amber-500 transition-all duration-1000"
-                style={{ width: `${100 - summary.percentage}%` }}
+                style={{ width: `${100 - filteredSummary.percentage}%` }}
               />
             </div>
 
@@ -142,10 +174,10 @@ export const SchoolReportSidebar: React.FC<SchoolReportSidebarProps> = ({
                 </div>
                 <div className="flex items-baseline gap-2">
                   <span className="text-xl font-black text-slate-800">
-                    {(summary.finished || 0).toLocaleString()}
+                    {(filteredSummary.finished || 0).toLocaleString()}
                   </span>
                   <span className="text-sm font-bold text-slate-500">
-                    ({summary.percentage}%)
+                    ({filteredSummary.percentage}%)
                   </span>
                 </div>
               </div>
@@ -159,10 +191,10 @@ export const SchoolReportSidebar: React.FC<SchoolReportSidebarProps> = ({
                 </div>
                 <div className="flex items-baseline gap-2">
                   <span className="text-xl font-black text-slate-800">
-                    {(summary.pending || 0).toLocaleString()}
+                    {(filteredSummary.pending || 0).toLocaleString()}
                   </span>
                   <span className="text-sm font-bold text-slate-500">
-                    ({(100 - summary.percentage).toFixed(2)}%)
+                    ({(100 - filteredSummary.percentage).toFixed(2)}%)
                   </span>
                 </div>
               </div>
@@ -213,8 +245,8 @@ export const SchoolReportSidebar: React.FC<SchoolReportSidebarProps> = ({
                   className="h-24 bg-slate-50 animate-pulse rounded-3xl"
                 />
               ))
-          ) : reports.length > 0 ? (
-            reports.map((item: any, idx: number) => (
+          ) : filteredReports.length > 0 ? (
+            filteredReports.map((item: any, idx: number) => (
               <div
                 key={idx}
                 className="p-5 bg-white border border-slate-100 rounded-3xl hover:shadow-xl hover:shadow-slate-100 transition-all group"
