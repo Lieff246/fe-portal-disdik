@@ -1,958 +1,1303 @@
-import { useState, useEffect } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
-import {
-  Search, Download, Eye, Play, Star, Mail, Phone,
-  ChevronRight, Calendar, Bell,
-  Clock, ArrowLeft, FileText, BookOpen,
-  Video as VideoIcon, Home, Newspaper, Users, Archive,
-  Library, Zap, CheckCircle, Info, Globe2, Link2, Share2
-} from "lucide-react";
+import { useState, useEffect, Fragment } from "react";
+import { useParams, Navigate, useNavigate, useLocation } from "react-router-dom";
+import { CABANG_DATA } from "@/types";
+import { School as SchoolIcon, Search, ChevronLeft, MapPin, Eye, Plus, Minus, Target, X } from "lucide-react";
+import { PortalService } from "@/services/portalService";
+import { ProyeksiCard } from "@/components/Sections/ProyeksiCardSection";
+import { GeneralDataSection } from "@/components/Sections/GeneralDataSection";
+import { SulawesiMap } from "@/components/Fragments/SulawesiMap";
+import { SchoolDetailSidebar } from "@/components/Fragments/SchoolDetailSidebar";
 
-// ─── Deterministic Data Generator ────────────────────────────────────────────
-const getDeterministicData = (schoolId: string, schoolName: string) => {
-  let hash = 0;
-  const idStr = String(schoolId || schoolName || "");
-  for (let i = 0; i < idStr.length; i++) {
-    hash = idStr.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  hash = Math.abs(hash);
+import { CategoryProjectionSidebar } from "@/components/Fragments/CategoryProjectionSidebar";
+import { JatuhTempoSidebar } from "@/components/Fragments/JatuhTempoSidebar";
+import { NeracaSidebar } from "@/components/Fragments/NeracaSidebar";
+import { SchoolReportSidebar } from "@/components/Fragments/SchoolReportSidebar";
 
-  const principalNames = [
-    "Drs. H. Ahmad Fauzi, M.Pd.", "Dr. I Wayan Sudarta, S.Pd., M.Si.",
-    "Siti Rahmawati, S.Pd., M.Pd.", "Hendra Wijaya, S.T., M.Kom.",
-    "Ni Made Lestari, M.Pd.", "Drs. Syarifuddin, M.Si.",
-  ];
-  const kecamatanList = [
-    "Palu Timur", "Palu Barat", "Palu Selatan", "Palu Utara",
-    "Donggala", "Sigi Biromaru", "Banawa",
-  ];
+import { Skeleton } from "@/components/Elements/Skeleton/Skeleton";
 
-  const studentCount = 350 + (hash % 650);
-  const totalTeachers = 15 + (hash % 45);
-  const pnsCount = Math.round(totalTeachers * (50 + (hash % 35)) / 100);
-  const npsn = `${69000000 + (hash % 999999)}`;
-  const accreditation = ["A", "B", "A"][hash % 3];
+import { MapContainer, TileLayer, Marker, Polygon, Tooltip, useMap } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 
-  return {
-    principalName: principalNames[hash % principalNames.length],
-    kecamatan: kecamatanList[hash % kecamatanList.length],
-    studentCount,
-    totalTeachers,
-    pnsCount,
-    nonPnsCount: totalTeachers - pnsCount,
-    npsn,
-    accreditation,
-    rombelCount: Math.round(studentCount / 32),
-    email: `admin.${schoolName.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 12)}@sch.id`,
-    phone: `0451-${2000 + (hash % 8000)}-${100 + (hash % 900)}`,
-    address: `Jl. Pendidikan No. ${1 + (hash % 100)}, ${kecamatanList[hash % kecamatanList.length]}, Sulawesi Tengah`,
-  };
+
+
+const getCabdisNumberFromName = (name: string): number => {
+  const nameUpper = name?.toUpperCase() || "";
+  if (nameUpper.includes("WILAYAH I") || nameUpper.includes("WILAYAH 1")) return 1;
+  if (nameUpper.includes("WILAYAH II") || nameUpper.includes("WILAYAH 2")) return 2;
+  if (nameUpper.includes("WILAYAH III") || nameUpper.includes("WILAYAH 3")) return 3;
+  if (nameUpper.includes("WILAYAH IV") || nameUpper.includes("WILAYAH 4")) return 4;
+  if (nameUpper.includes("WILAYAH V") || nameUpper.includes("WILAYAH 5")) return 5;
+  if (nameUpper.includes("WILAYAH VI") || nameUpper.includes("WILAYAH 6")) return 6;
+
+  // Try direct digit extraction
+  const match = nameUpper.match(/\d+/);
+  if (match) return parseInt(match[0], 10);
+
+  return 1; // default fallback
 };
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-type PageType = "beranda" | "berita" | "video" | "perpustakaan" | "fasilitas" | "guru-siswa" | "arsip";
+// Helper component to capture Leaflet map instance
+const MapInstanceCapture = ({ setMap }: { setMap: (map: L.Map | null) => void }) => {
+  const map = useMap();
+  useEffect(() => {
+    setMap(map);
+    return () => setMap(null);
+  }, [map, setMap]);
+  return null;
+};
 
-// ─── Navigation Items ─────────────────────────────────────────────────────────
-const navItems: { id: PageType; label: string; icon: React.ElementType }[] = [
-  { id: "beranda", label: "Beranda", icon: Home },
-  { id: "berita", label: "Berita & Pengumuman", icon: Newspaper },
-  { id: "video", label: "Video", icon: VideoIcon },
-  { id: "guru-siswa", label: "Guru & Siswa", icon: Users },
-  { id: "fasilitas", label: "Fasilitas", icon: Zap },
-  { id: "arsip", label: "Arsip", icon: Archive },
-  { id: "perpustakaan", label: "Perpustakaan", icon: Library },
-];
 
-// ─── Star Rating Component ────────────────────────────────────────────────────
-const StarRating = ({ rating }: { rating: number }) => (
-  <div className="flex gap-0.5">
-    {[1, 2, 3, 4, 5].map(i => (
-      <Star key={i} className={`w-3.5 h-3.5 ${i <= rating ? "fill-yellow-400 text-yellow-400" : "text-gray-600"}`} />
-    ))}
-  </div>
-);
-
-// ─── Main Component ───────────────────────────────────────────────────────────
-export const SchoolLandingSekolahku = () => {
-  const { id } = useParams();
+export const SchoolLandingSekolahku = ({ slug: propSlug }: { slug?: string }) => {
+  const { slug: paramSlug, id: paramId } = useParams();
+  const schoolId = paramId;
+  const slug = propSlug || paramSlug;
   const navigate = useNavigate();
   const { search } = useLocation();
   const queryParams = new URLSearchParams(search);
+  const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
 
-  const schoolName = queryParams.get("name") || `SMA Negeri (ID: ${id})`;
-  const gradeType = schoolName.toUpperCase().includes("SMK") ? "SMK"
-    : schoolName.toUpperCase().includes("SLB") ? "SLB" : "SMA";
-  const d = getDeterministicData(id || "1", schoolName);
+  const isSchoolMode = !!schoolId;
 
-  const [activePage, setActivePage] = useState<PageType>("beranda");
-  const [bookQuery, setBookQuery] = useState("");
-  const [bookCategory, setBookCategory] = useState<"IPA" | "IPS" | "Bahasa">("IPA");
-  const [selectedBook, setSelectedBook] = useState(0);
-  const [newsFilter, setNewsFilter] = useState<"Umum" | "Sekolah">("Umum");
-  const [videoFilter, setVideoFilter] = useState<"Sekolah" | "Umum">("Sekolah");
+  // State Management
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [schoolSearch, setSchoolSearch] = useState("");
+  const [portalData, setPortalData] = useState<any>(null);
+  const [selectedSchoolForMap, setSelectedSchoolForMap] = useState<any>(null);
 
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [activePage]);
+  // Single School Specific States
+  const [activeSchool, setActiveSchool] = useState<any>(null);
+  const [activeSchoolCabdisId, setActiveSchoolCabdisId] = useState<number | null>(null);
+  const [derivedCabdisSlug, setDerivedCabdisSlug] = useState<string | null>(null);
+  const [mapLoading, setMapLoading] = useState(isSchoolMode);
+  const [schoolDetail, setSchoolDetail] = useState<any>(null);
+  const [detailLoading, setDetailLoading] = useState(isSchoolMode);
 
-  // ── Data dumps ────────────────────────────────────────────────────────────
-  const books = {
-    IPA: [
-      { id: 0, title: "Buku Matematika Kelas 12", rating: 3.5, cover: "📘", desc: "Buku ini mencakup materi dasar seperti trigonometri, fungsi, kalkulus, dan matematika diskrit", downloads: "2.4rb" },
-      { id: 1, title: "Buku Fisika Kelas 10", rating: 3, cover: "📗", desc: "Materi fisika dasar mencakup kinematika, dinamika, dan termodinamika untuk kelas 10.", downloads: "1.8rb" },
-      { id: 2, title: "Buku Biologi Kelas 10", rating: 3, cover: "📙", desc: "Biologi kelas 10 mencakup sel, jaringan, ekosistem, dan keanekaragaman hayati.", downloads: "1.2rb" },
-    ],
-    IPS: [
-      { id: 0, title: "Buku Ekonomi Kelas 11", rating: 4, cover: "📒", desc: "Mencakup teori ekonomi mikro dan makro, pasar, dan kebijakan moneter fiskal.", downloads: "900" },
-      { id: 1, title: "Buku Geografi Kelas 10", rating: 3, cover: "📔", desc: "Geografi fisik dan manusia, peta, SIG, serta fenomena geosfer.", downloads: "750" },
-      { id: 2, title: "Buku Sosiologi Kelas 12", rating: 3.5, cover: "📓", desc: "Struktur sosial, perubahan sosial, konflik, dan integrasi sosial.", downloads: "680" },
-    ],
-    Bahasa: [
-      { id: 0, title: "Bahasa Indonesia Kelas 12", rating: 4, cover: "📕", desc: "Teks argumentasi, debat, puisi, dan karya tulis ilmiah untuk kelas 12.", downloads: "1.5rb" },
-      { id: 1, title: "Bahasa Inggris Kelas 11", rating: 3.5, cover: "📖", desc: "Grammar, reading comprehension, writing, dan percakapan formal bahasa Inggris.", downloads: "1.1rb" },
-    ],
+  // School Detail Sidebar states
+  const [selectedSchoolForDetail, setSelectedSchoolForDetail] = useState<any>(null);
+  const [isSchoolDetailOpen, setIsSchoolDetailOpen] = useState(false);
+
+  // Gedung & Ruangan Sidebar states
+  const [activeGedung, setActiveGedung] = useState<any>(null);
+  const [activeRoom, setActiveRoom] = useState<any>(null);
+  const [isRoomSidebarOpen, setIsRoomSidebarOpen] = useState(false);
+  const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
+  const [activePhotoIndex, setActivePhotoIndex] = useState(0);
+  const [isCctvModalOpen, setIsCctvModalOpen] = useState(false);
+
+  // Projections filter states
+  const [localMonth, setLocalMonth] = useState(new Date().toISOString().slice(0, 7));
+  const [localRange, setLocalRange] = useState<"monthly" | "yearly">("monthly");
+
+  // Sidebar states
+  const [activeCategoryDetail, setActiveCategoryDetail] = useState<string | null>(null);
+  const [activeJatuhTempoDetail, setActiveJatuhTempoDetail] = useState<string | null>(null);
+  const [isNeracaOpen, setIsNeracaOpen] = useState(false);
+  const [isNeracaRekapOpen, setIsNeracaRekapOpen] = useState(false);
+  const [isSchoolReportsOpen, setIsSchoolReportsOpen] = useState(false);
+
+  const getPhotos = () => {
+    if (!activeGedung?.dokumentasi) {
+      return [];
+    }
+    
+    let list: any[] = [];
+    if (Array.isArray(activeGedung.dokumentasi)) {
+      list = activeGedung.dokumentasi;
+    } else if (typeof activeGedung.dokumentasi === 'string') {
+      try {
+        const parsed = JSON.parse(activeGedung.dokumentasi);
+        if (Array.isArray(parsed)) {
+          list = parsed;
+        } else {
+          list = [activeGedung.dokumentasi];
+        }
+      } catch {
+        list = [activeGedung.dokumentasi];
+      }
+    }
+    
+    const urls = list.map((item: any) => {
+      if (typeof item === 'string') return item;
+      if (item && typeof item === 'object') {
+        return item.foto_url || item.url || item.path || item.file_path || item.foto || "";
+      }
+      return "";
+    }).filter((url: string) => url !== "");
+
+    return urls;
   };
 
-  const relatedBooks = [
-    { title: "Buku Kimia Kelas 12", cover: "🧪", rating: 3 },
-    { title: "Buku Fisika Kelas 12", cover: "⚡", rating: 3 },
-    { title: "Buku Biologi Kelas 12", cover: "🌿", rating: 3 },
-    { title: "Buku Geografi Kelas 12", cover: "🌍", rating: 3 },
-    { title: "Buku Bahasa Indonesia", cover: "📝", rating: 3 },
-    { title: "Buku Biologi Kelas 12", cover: "🔬", rating: 3 },
-  ];
+  // =========================================================================
+  // KUSTOMISASI KOORDINAT CENTER & ZOOM PER ID CABDIS (MANUAL ID MAPPING)
+  // -------------------------------------------------------------------------
+  const CUSTOM_REGIONAL_CONFIGS: Record<number, { center: [number, number] | null; zoom: number | null }> = {
+    1: { center: [-1.44849, 119.909619], zoom: 10 }, // Wilayah 1 (Kota Palu, Sigi)
+    2: { center: [-2.14849, 120.309619], zoom: 8 }, // Wilayah 2 (Parigi Moutong, Donggala)
+    3: { center: [-3.04849, 121.209619], zoom: 8 }, // Wilayah 3 (Poso, Ampana)
+    4: { center: [-4.252631, 121.758189], zoom: 8.4 }, // Wilayah 4 (Morowali, Morowali Utara)
+    5: { center: [-1.046066, 122.844154], zoom: null }, // Wilayah 5 (Banggai area)
+    6: { center: [-0.029523, 121.074295], zoom: 9 }, // Wilayah 6 (Tolitoli, Buol)
+  };
 
-  const newsItems = [
-    {
-      tag: "Berita Terbaru", tagColor: "#3b82f6",
-      img: "🎨",
-      title: "Lestarikan Keragaman Budaya Nusantara, Eversac Gelar Lomba Desain Tas Berhadiah",
-      time: "10.00 WIta", date: "Kamis, 1 Desember 2022", read: "Baca Selengkapnya",
-      category: "Umum" as const,
-    },
-    {
-      tag: "Pendidikan", tagColor: "#8b5cf6",
-      img: "📚",
-      title: "Perkuat Pendidikan Karakter Kemendikbudristek Gelar PUSAKA 2022",
-      time: "10.00 WIta", date: "Kamis, 1 Desember 2022", read: "Baca Selengkapnya",
-      category: "Umum" as const,
-    },
-    {
-      tag: "Guru", tagColor: "#10b981",
-      img: "👩‍🏫",
-      title: "Pendidikan Guru Penggerak Angkatan Empat, 7.948 Guru Dinyatakan Lulus",
-      time: "10.00 WIta", date: "Kamis, 1 Desember 2022", read: "Baca Selengkapnya",
-      category: "Umum" as const,
-    },
-    {
-      tag: "Statistik", tagColor: "#f59e0b",
-      img: "📊",
-      title: "IKPK Kemendikbudristek Tahun 2022 Meningkat Menjadi 85,9",
-      time: "10.00 WIta", date: "Kamis, 1 Desember 2022", read: "Baca Selengkapnya",
-      category: "Umum" as const,
-    },
-    {
-      tag: "Prestasi", tagColor: "#ef4444",
-      img: "🏆",
-      title: `${schoolName} Raih Juara I Olimpiade Sains Tingkat Provinsi 2022`,
-      time: "09.00 WIta", date: "Senin, 28 Nov 2022", read: "Baca Selengkapnya",
-      category: "Sekolah" as const,
-    },
-    {
-      tag: "PPDB", tagColor: "#06b6d4",
-      img: "📋",
-      title: "Jadwal dan Syarat PPDB Online Tahun Ajaran 2023/2024",
-      time: "08.00 WIta", date: "Jumat, 25 Nov 2022", read: "Baca Selengkapnya",
-      category: "Sekolah" as const,
-    },
-  ];
+  // 1. Fetch school map data & school details if in school mode
+  useEffect(() => {
+    if (schoolId) {
+      setMapLoading(true);
+      setDetailLoading(true);
 
-  const announcements = [
-    { img: "📢", title: "Pengumuman Pendidikan Guru Penggerak Angkatan Empat 2022", time: "15.00 wita", date: "25-11-2022" },
-    { img: "🎓", title: "Pengumuman Pembukaan Pendaftaran Beasiswa 2023", time: "15.00 wita", date: "25-11-2022" },
-    { img: "💰", title: "Pendaftaran Beasiswa Prioritas untuk guru se-sulawesi tengah", time: "15.00 wita", date: "25-11-2022" },
-    { img: "🔬", title: "Pendaftaran Peserta Olimpiade Sains Tingkat Provinsi Tahun 2022", time: "15.00 wita", date: "25-11-2022" },
-  ];
+      // Fetch map data
+      PortalService.getSchoolMapData(schoolId)
+        .then((res) => {
+          if (res?.data) {
+            const found = res.data.schools?.find((s: any) => s.id === schoolId);
+            if (found) {
+              setActiveSchool(found);
+            }
+            if (res.data.cabdis) {
+              let cabdisId = 1;
+              const idMatch = res.data.cabdis.id?.match(/\d+/);
+              if (idMatch) {
+                cabdisId = parseInt(idMatch[0], 10);
+              } else if (res.data.cabdis.name) {
+                cabdisId = getCabdisNumberFromName(res.data.cabdis.name);
+              }
+              setActiveSchoolCabdisId(cabdisId);
+              setDerivedCabdisSlug(`cabdis-${cabdisId}`);
+            }
+          }
+        })
+        .catch((err) => console.error("Failed to fetch school map data", err))
+        .finally(() => setMapLoading(false));
 
-  const videos = [
-    { title: `Hari Pendidikan Nasional Tahun 2022 ${schoolName}`, duration: "10:00", views: "15rb", time: "1 Hari yang lalu", thumb: "🎓", category: "Sekolah" as const },
-    { title: "Launching Panduan Lalu Lintas Mata Pelajaran...", duration: "20:40", views: "15rb", time: "1 Hari yang lalu", thumb: "📡", category: "Umum" as const },
-    { title: "Webinar Implementasi Kurikulum Merdeka...", duration: "08:40", views: "15rb", time: "1 Hari yang lalu", thumb: "💻", category: "Umum" as const },
-    { title: "Lomba Menyanyi Peringatan Hari Guru Nasional", duration: "30:40", views: "15rb", time: "1 Hari yang lalu", thumb: "🎵", category: "Sekolah" as const },
-    { title: "Kampanye Keselamatan Lalu Lintas Angkatan Jalan", duration: "25:00", views: "15rb", time: "1 Hari yang lalu", thumb: "🚦", category: "Umum" as const },
-    { title: "Kemahan Jumat s/d Sabtu Perjusa 2022", duration: "20:00", views: "15rb", time: "1 Hari yang lalu", thumb: "⛺", category: "Sekolah" as const },
-    { title: "Story Telling D'bestien Competition", duration: "1:00:40", views: "15rb", time: "1 Hari yang lalu", thumb: "🎭", category: "Sekolah" as const },
-    { title: "After Movie - SMA Indonesia Charity Concert 2018", duration: "15:40", views: "15rb", time: "1 Hari yang lalu", thumb: "🎬", category: "Umum" as const },
-    { title: "LKPS (Latihan Kepemimpinan Siswa) Tahun 2022", duration: "22:40", views: "15rb", time: "1 Hari yang lalu", thumb: "🤝", category: "Sekolah" as const },
-  ];
+      // Fetch detailed school stats from our new backend endpoint!
+      PortalService.getSchoolDetail(schoolId)
+        .then((res) => {
+          if (res?.data) {
+            setSchoolDetail(res.data);
+          }
+        })
+        .catch((err) => console.error("Failed to fetch school details from backend", err))
+        .finally(() => setDetailLoading(false));
+    }
+  }, [schoolId]);
 
-  const facilities = [
-    { icon: "🔬", title: "Laboratorium IPA", desc: "Lab biologi, kimia, dan fisika dengan peralatan lengkap dan modern untuk praktikum siswa.", files: ["Inventaris Lab 2023", "SOP Penggunaan Lab"] },
-    { icon: "💻", title: "Laboratorium Komputer", desc: "40 unit komputer berkoneksi internet fiber optik 1 Gbps untuk kegiatan belajar digital.", files: ["Jadwal Lab Komputer", "Tata Tertib Lab"] },
-    { icon: "📚", title: "Perpustakaan", desc: "Koleksi lebih dari 5.000 judul buku pelajaran, referensi, dan bacaan umum siswa.", files: ["Katalog Buku 2023"] },
-    { icon: "⚽", title: "Lapangan Olahraga", desc: "Lapangan basket, voli, dan futsal yang representatif untuk kegiatan olahraga siswa.", files: ["Jadwal Penggunaan Lapangan"] },
-    { icon: "🎨", title: "Ruang Seni & Budaya", desc: "Fasilitas studio seni rupa, teater, dan musik untuk pengembangan bakat siswa.", files: ["Jadwal Studio Seni"] },
-    { icon: "🏥", title: "Ruang UKS", desc: "Unit Kesehatan Sekolah dengan tenaga medis dan perlengkapan P3K lengkap.", files: ["SOP UKS"] },
-  ];
+  // Resolving slug & details
+  const activeSlug = isSchoolMode ? derivedCabdisSlug : slug;
+  const numericId = isSchoolMode ? activeSchoolCabdisId : (slug ? parseInt(slug.replace("cabdis-", ""), 10) : null);
+  const cabangConfig = numericId ? CABANG_DATA.find((c) => c.id === numericId) : undefined;
+  const regionName = queryParams.get("name") || (isSchoolMode ? activeSchool?.name : cabangConfig?.name) || `Wilayah ${numericId || ""}`;
 
-  const activeBooks = books[bookCategory];
-  const currentBook = activeBooks[selectedBook] ?? activeBooks[0];
-  const filteredNews = newsItems.filter(n => n.category === newsFilter);
-  const filteredVideos = videos.filter(v => v.category === videoFilter);
-  const featuredVideo = videos.find(v => v.category === videoFilter) || videos[0];
+  // Resolusi nilai kustom center dan zoom berdasarkan ID Cabdis aktif / lokasi sekolah
+  const CUSTOM_MAP_CENTER = (numericId && CUSTOM_REGIONAL_CONFIGS[numericId]?.center) || null;
+  const CUSTOM_MAP_ZOOM = (numericId && CUSTOM_REGIONAL_CONFIGS[numericId]?.zoom) || null;
 
-  // ─── Styles ────────────────────────────────────────────────────────────────
-  const BG = "#0d1117";
-  const BG2 = "#161b22";
-  const BG3 = "#1c2333";
-  const BORDER = "rgba(255,255,255,0.08)";
-  const BLUE = "#3b82f6";
+  const schoolCenter: [number, number] | null = activeSchool?.latitude && activeSchool?.longitude
+    ? [parseFloat(activeSchool.latitude), parseFloat(activeSchool.longitude)]
+    : null;
+
+  const MAP_CENTER = isSchoolMode ? schoolCenter : CUSTOM_MAP_CENTER;
+  const MAP_ZOOM = isSchoolMode ? 14 : CUSTOM_MAP_ZOOM;
+
+  // Calculate center from schoolDetail polygon if available
+  let calculatedCenter: [number, number] | null = null;
+  if (schoolDetail?.polygon && Array.isArray(schoolDetail.polygon) && schoolDetail.polygon.length > 0) {
+    let latSum = 0;
+    let lngSum = 0;
+    schoolDetail.polygon.forEach((coord: any) => {
+      const lat = parseFloat(coord[0]);
+      const lng = parseFloat(coord[1]);
+      if (!isNaN(lat) && !isNaN(lng)) {
+        latSum += lat;
+        lngSum += lng;
+      }
+    });
+    calculatedCenter = [latSum / schoolDetail.polygon.length, lngSum / schoolDetail.polygon.length];
+  }
+
+  const centerLat = (calculatedCenter ? calculatedCenter[0] : (activeSchool?.latitude ? parseFloat(activeSchool.latitude) : -0.8917)) - 0.0006;
+  const centerLng = calculatedCenter ? calculatedCenter[1] : (activeSchool?.longitude ? parseFloat(activeSchool.longitude) : 119.8707);
+
+
+  const buildingCenterMarkerIcon = L.divIcon({
+    html: `<div style="background-color: #2563eb; width: 14px; height: 14px; border-radius: 50%; border: 2.5px solid white; box-shadow: 0 0 8px rgba(37, 99, 235, 0.6); display: flex; align-items: center; justify-content: center;"><div style="width: 4px; height: 4px; background: white; border-radius: 50%;"></div></div>`,
+    className: '',
+    iconSize: [14, 14],
+    iconAnchor: [7, 7]
+  });
+
+  // Single School Deterministic Data & Summary Mapping
+  const schoolName = queryParams.get("name") || activeSchool?.name || schoolDetail?.name || `Sekolah Menengah (ID: ${schoolId})`;
+  const schoolD = schoolDetail?.stats || null;
+
+  const schoolSummary = schoolD ? {
+    total_sekolah: 1,
+    total_rombel: schoolD.rombelCount,
+    total_siswa: schoolD.studentCount,
+    total_guru: schoolD.pnsCount,
+    total_tendik: schoolD.nonPnsCount,
+    total_pegawai: 0,
+  } : null;
+
+
+  // 2. Fetch detailed region data when slug or derived slug changes
+  useEffect(() => {
+    if (activeSlug) {
+      // By default, fetch lightweight summary stats without huge employee details list
+      fetchDetail(activeSlug, false);
+    }
+  }, [activeSlug, localMonth, localRange]);
+
+  // 3. Fetch overall landing page context on mount
+  useEffect(() => {
+    fetchLandingData();
+  }, []);
+
+  const fetchDetail = async (cabdisSlug: string, includeDetails = false) => {
+    setLoading(true);
+    try {
+      const res = await PortalService.getRegionDetail({
+        slug: cabdisSlug,
+        month: localMonth,
+        range: localRange,
+        include_details: includeDetails ? "1" : "0",
+      });
+      setData(res);
+    } catch (error) {
+      console.error("Failed to fetch region detail", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch details on demand only when a sidebar is opened and details aren't in memory
+  const hasDetails = !!(data?.projections?.proyeksi?.data_category || data?.projections?.jatuh_tempo?.detail);
+  const shouldFetchDetails = !!activeCategoryDetail || !!activeJatuhTempoDetail;
+
+  useEffect(() => {
+    if (activeSlug && shouldFetchDetails && !hasDetails && !loading) {
+      fetchDetail(activeSlug, true);
+    }
+  }, [activeSlug, shouldFetchDetails, hasDetails]);
+
+  const fetchLandingData = async () => {
+    try {
+      const res = await PortalService.getLandingData();
+      setPortalData(res?.data || {});
+    } catch (error) {
+      console.error("Failed to fetch landing data", error);
+      setPortalData({});
+    }
+  };
+
+  const handleProyeksiFilterChange = (range: "monthly" | "yearly", month?: number) => {
+    setLocalRange(range);
+    if (range === "monthly" && month) {
+      const y = localMonth
+        ? localMonth.split("-")[0]
+        : new Date().getFullYear().toString();
+      const mStr = month.toString().padStart(2, "0");
+      setLocalMonth(`${y}-${mStr}`);
+    }
+  };
+
+  // Redirect to home jika ID tidak dikenal atau gagal terurai
+  if (!isSchoolMode && (!numericId || !cabangConfig)) {
+    return <Navigate to="/" replace />;
+  }
+
+  // Jika dalam mode sekolah tapi datanya gagal dimuat setelah loading selesai
+  if (isSchoolMode && !mapLoading && !activeSchool) {
+    return <Navigate to="/" replace />;
+  }
+
+  const isPageLoading = isSchoolMode ? (mapLoading || detailLoading || !data || !activeSchool || !schoolDetail) : (loading && !data);
+
+  if (isPageLoading) {
+    return (
+      <div className="w-screen h-screen p-10 bg-gray-50 flex flex-col gap-6">
+        <Skeleton className="w-full h-[60vh] rounded-[40px] animate-pulse" />
+        <div className="flex gap-6 h-[30vh] animate-pulse">
+          <Skeleton className="w-1/3 h-full" />
+          <Skeleton className="w-1/3 h-full" />
+          <Skeleton className="w-1/3 h-full" />
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen font-poppins" style={{ background: BG, color: "white" }}>
+    <div className="relative w-screen h-screen overflow-y-auto text-content font-poppins selection:bg-primary selection:text-white scroll-smooth scrollbar-hide bg-slate-50/20">
+      {/* Background Image fix: Gunakan z-0 agar posisinya di layar paling dasar */}
+      <img
+        src="/images/cmd/bc-cmdcenter-bg.webp"
+        alt="Portal Background"
+        className="fixed inset-0 object-cover object-center w-full h-full opacity-15 pointer-events-none select-none z-0"
+      />
 
-      {/* ── TOPBAR NAVBAR ────────────────────────────────────────── */}
-      <nav className="sticky top-0 z-50 w-full" style={{ background: BG2, borderBottom: `1px solid ${BORDER}` }}>
-        <div className="w-full max-w-7xl mx-auto px-6 flex items-center gap-6 h-14">
-          {/* Logo */}
-          <button
-            onClick={() => navigate(-1)}
-            className="flex items-center gap-2 mr-2 group cursor-pointer"
-          >
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: BLUE }}>
-              <Zap className="w-4 h-4 text-white" />
-            </div>
-            <span className="font-black text-white text-sm tracking-wide hidden sm:block">sekolahku</span>
-          </button>
+      {/* Sidebars */}
+      <CategoryProjectionSidebar
+        isOpen={!!activeCategoryDetail}
+        onClose={() => setActiveCategoryDetail(null)}
+        data={data?.projections?.proyeksi?.data_category?.kurang_dari_90 || {}}
+        initialCategory={activeCategoryDetail || "berkala"}
+        currentMonth={localMonth}
+        onMonthChange={(newMonth) => setLocalMonth(newMonth)}
+        isLoading={loading}
+      />
 
-          {/* Nav Items */}
-          <div className="flex items-center gap-1 flex-1 overflow-x-auto scrollbar-none">
-            {navItems.map(item => (
-              <button
-                key={item.id}
-                onClick={() => setActivePage(item.id)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer"
-                style={{
-                  color: activePage === item.id ? "white" : "rgba(255,255,255,0.5)",
-                  background: "transparent",
-                  borderBottom: activePage === item.id ? `2px solid ${BLUE}` : "2px solid transparent",
-                  borderRadius: 0,
-                }}
-              >
-                {item.label}
-              </button>
-            ))}
+      <JatuhTempoSidebar
+        isOpen={!!activeJatuhTempoDetail}
+        onClose={() => setActiveJatuhTempoDetail(null)}
+        data={data?.projections?.jatuh_tempo || {}}
+        initialCategory={activeJatuhTempoDetail || "semua"}
+        isLoading={loading}
+      />
+
+      <NeracaSidebar
+        isOpen={isNeracaOpen}
+        onClose={() => setIsNeracaOpen(false)}
+        initialNeracaData={portalData?.neraca}
+      />
+
+      <NeracaSidebar
+        isOpen={isNeracaRekapOpen}
+        onClose={() => setIsNeracaRekapOpen(false)}
+        initialNeracaData={portalData?.neracaRekap}
+      />
+
+      <SchoolReportSidebar
+        isOpen={isSchoolReportsOpen}
+        onClose={() => setIsSchoolReportsOpen(false)}
+        currentMonth={localMonth}
+        cabdisSlug={derivedCabdisSlug || slug}  
+      />
+
+      <SchoolDetailSidebar
+        isOpen={isSchoolDetailOpen}
+        onClose={() => setIsSchoolDetailOpen(false)}
+        school={selectedSchoolForDetail}
+      />
+
+      <GedungRoomDetailSidebar
+        isOpen={isRoomSidebarOpen}
+        onClose={() => setIsRoomSidebarOpen(false)}
+        activeGedung={activeGedung}
+        setActiveGedung={setActiveGedung}
+        activeRoom={activeRoom}
+        setActiveRoom={setActiveRoom}
+        schoolDetail={schoolDetail}
+        centerLat={centerLat}
+        centerLng={centerLng}
+      />
+
+      {/* Main content fix: z-10 for absolute overlays */}
+      <main className="w-full bg-transparent min-h-screen relative z-10 overflow-x-hidden flex flex-col items-center justify-start">
+
+        {/* Floating Glassmorphic Header Bar */}
+        <div className="absolute top-6 left-10 right-10 z-50 bg-white/90 backdrop-blur-md border border-white/60 shadow-xl rounded-full px-4 md:px-6 py-2.5 md:py-3 flex items-center justify-between pointer-events-auto">
+          {/* Left side: Back Button + Sulawesi Tengah Logo + School Name */}
+          <div className="flex items-center gap-2 md:gap-3 min-w-0">
+            <button
+              onClick={() => navigate(-1)}
+              className="w-8 h-8 md:w-10 md:h-10 bg-indigo-950 hover:bg-indigo-900 text-white rounded-full flex items-center justify-center cursor-pointer transition-colors shadow-sm shrink-0"
+              title="Kembali"
+            >
+              <ChevronLeft className="w-4 h-4 md:w-5 md:h-5" />
+            </button>
+            <h1 className="text-xs md:text-sm font-black text-slate-800 uppercase tracking-wider truncate">
+              {isSchoolMode ? schoolName : regionName}
+            </h1>
           </div>
 
-          {/* Back button */}
-          <button
-            onClick={() => navigate(-1)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex-shrink-0"
-            style={{ color: "rgba(255,255,255,0.4)", background: "rgba(255,255,255,0.05)" }}
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            Kembali
-          </button>
-        </div>
-      </nav>
-
-      {/* ════════════════ BERANDA ════════════════ */}
-      {activePage === "beranda" && (
-        <div>
-          {/* Hero Slider */}
-          <section className="relative w-full h-[340px] overflow-hidden flex items-end"
-            style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%)" }}>
-            <div className="absolute inset-0 opacity-20 flex items-center justify-center text-[200px] pointer-events-none select-none">
-              🏫
-            </div>
-            <div className="absolute inset-0" style={{ background: "linear-gradient(to right, rgba(13,17,23,0.9) 40%, transparent)" }} />
-            <div className="relative z-10 p-10 max-w-xl">
-              <div className="flex gap-2 mb-3">
-                <span className="px-2.5 py-0.5 rounded text-[10px] font-black uppercase" style={{ background: BLUE }}>Populer</span>
-                <span className="text-[10px] text-white/50 flex items-center gap-1"><Eye className="w-3 h-3" /> 15rb ditonton</span>
-                <span className="text-[10px] text-white/50 flex items-center gap-1"><Clock className="w-3 h-3" /> 1 Hari yang lalu</span>
-              </div>
-              <h1 className="text-2xl sm:text-3xl font-black text-white leading-snug">
-                {gradeType === "SMK" ? "SMK" : "SMA"} Terbaik Provinsi Sulawesi Tengah
-                <br />Tahun Ajaran 2025/2026
-              </h1>
-              <p className="text-sm text-white/60 mt-3 leading-relaxed max-w-sm">
-                {schoolName} berkomitmen menghadirkan pendidikan berkualitas, karakter unggul, dan prestasi gemilang untuk generasi Sulawesi Tengah.
-              </p>
-              <button
-                onClick={() => setActivePage("berita")}
-                className="mt-5 flex items-center gap-2 px-5 py-2.5 rounded-lg text-xs font-black uppercase cursor-pointer transition-all hover:opacity-90"
-                style={{ background: BLUE }}
-              >
-                <ChevronRight className="w-4 h-4" />
-                Baca Selengkapnya
-              </button>
-            </div>
-            {/* Thumbnail strips */}
-            <div className="absolute right-6 bottom-6 flex gap-2">
-              {["🎓", "📚", "🏆", "🌍"].map((emoji, i) => (
-                <div key={i} className="w-16 h-12 rounded-lg flex items-center justify-center text-2xl cursor-pointer opacity-70 hover:opacity-100 transition-opacity"
-                  style={{ background: BG3, border: `1px solid ${BORDER}` }}>
-                  {emoji}
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* Banner */}
-          <section className="w-full px-6 py-4 max-w-7xl mx-auto">
-            <div className="w-full rounded-2xl flex items-center justify-between px-8 py-5 relative overflow-hidden"
-              style={{ background: "linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%)" }}>
-              <div className="absolute right-0 top-0 bottom-0 flex items-center text-[100px] opacity-10 pointer-events-none select-none pr-6">🎓</div>
-              <div>
-                <div className="text-xs font-bold text-blue-200 uppercase tracking-wider">SELAMAT</div>
-                <div className="text-xl font-black text-white">TAHUN AJARAN BARU 2025/2026</div>
-                <div className="text-xs text-blue-200 mt-1">Mari bersama mewujudkan pendidikan berkualitas dan merata.</div>
-              </div>
-              <button
-                onClick={() => setActivePage("berita")}
-                className="px-5 py-2.5 rounded-xl text-xs font-black uppercase cursor-pointer flex-shrink-0 transition-all hover:opacity-90"
-                style={{ background: "rgba(255,255,255,0.2)", border: "1px solid rgba(255,255,255,0.3)" }}
-              >
-                Info Lebih Lanjut
-              </button>
-            </div>
-          </section>
-
-          {/* Data Sekolah */}
-          <section className="w-full px-6 py-6 max-w-7xl mx-auto">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Donut Stats */}
-              <div className="rounded-2xl p-6 space-y-4" style={{ background: BG2, border: `1px solid ${BORDER}` }}>
-                <div className="flex items-center justify-between">
-                  <h3 className="font-black text-white text-sm uppercase tracking-wider">Data Sekolah</h3>
-                  <span className="text-[10px] text-white/40 uppercase">Detail →</span>
-                </div>
-                <div className="flex items-center gap-6">
-                  {/* Simple circle stat */}
-                  <div className="relative w-24 h-24 shrink-0">
-                    <svg viewBox="0 0 80 80" className="w-full h-full -rotate-90">
-                      <circle cx="40" cy="40" r="32" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="10" />
-                      <circle cx="40" cy="40" r="32" fill="none" stroke={BLUE} strokeWidth="10"
-                        strokeDasharray={`${2 * Math.PI * 32 * 0.72} ${2 * Math.PI * 32}`} strokeLinecap="round" />
-                    </svg>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <span className="text-lg font-black text-white">{d.studentCount}</span>
-                      <span className="text-[9px] text-white/40 font-bold">Siswa</span>
-                    </div>
-                  </div>
-                  <div className="space-y-2 flex-1">
-                    {[
-                      { label: "Guru PNS", count: d.pnsCount, color: BLUE },
-                      { label: "Guru Honorer", count: d.nonPnsCount, color: "#8b5cf6" },
-                      { label: "Rombel", count: d.rombelCount, color: "#10b981" },
-                    ].map((item, i) => (
-                      <div key={i} className="flex items-center justify-between text-xs">
-                        <span className="flex items-center gap-1.5 text-white/60 font-medium">
-                          <span className="w-2 h-2 rounded-full" style={{ background: item.color }} />
-                          {item.label}
-                        </span>
-                        <span className="font-black text-white">{item.count}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Visi & Misi */}
-              <div className="lg:col-span-2 rounded-2xl p-6 space-y-4" style={{ background: BG2, border: `1px solid ${BORDER}` }}>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <h3 className="font-black text-white text-sm uppercase tracking-wider">Visi</h3>
-                    <p className="text-xs text-white/60 leading-relaxed">
-                      Mewujudkan generasi penerus bangsa yang unggul dalam IPTEK, berkarakter kuat, berakhlak mulia, dan berdaya saing global berbasis budaya lokal Sulawesi Tengah.
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <h3 className="font-black text-white text-sm uppercase tracking-wider">Misi</h3>
-                    <ul className="space-y-1">
-                      {[
-                        "Menyelenggarakan pembelajaran berkualitas dan inovatif",
-                        "Membangun karakter dan akhlak mulia siswa",
-                        "Mengintegrasikan teknologi dalam proses belajar mengajar",
-                      ].map((m, i) => (
-                        <li key={i} className="flex items-start gap-2 text-[11px] text-white/60">
-                          <CheckCircle className="w-3.5 h-3.5 text-blue-400 shrink-0 mt-0.5" />
-                          {m}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-
-                {/* Principal */}
-                <div className="flex items-center gap-4 p-4 rounded-xl" style={{ background: BG3, border: `1px solid ${BORDER}` }}>
-                  <div className="w-12 h-12 rounded-full flex items-center justify-center text-2xl flex-shrink-0" style={{ background: BG }}>
-                    👨‍💼
-                  </div>
-                  <div>
-                    <div className="text-[10px] text-white/40 uppercase font-black tracking-wider">Kepala Sekolah</div>
-                    <div className="text-sm font-black text-white">{d.principalName}</div>
-                    <div className="text-[10px] text-white/50">Akreditasi {d.accreditation} • NPSN {d.npsn}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Jurusan */}
-          <section className="w-full px-6 py-4 max-w-7xl mx-auto">
-            <h3 className="font-black text-white text-sm uppercase tracking-wider mb-4">Program Jurusan / Peminatan</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {[
-                { emoji: "🔬", title: "Jurusan IPA", desc: "Matematika, Fisika, Kimia, dan Biologi sebagai mata pelajaran unggulan dengan laboratorium lengkap.", color: "#3b82f6" },
-                { emoji: "📈", title: "Jurusan IPS", desc: "Ekonomi, Geografi, Sosiologi, dan Sejarah dengan pembelajaran berbasis studi kasus kontekstual.", color: "#8b5cf6" },
-                { emoji: "🌐", title: "Jurusan Bahasa", desc: "Bahasa Indonesia, Inggris, Jepang, dan Sastra dengan penekanan pada komunikasi global.", color: "#10b981" },
-              ].map((jur, i) => (
-                <div key={i} className="rounded-2xl p-6 space-y-3" style={{ background: BG2, border: `1px solid ${BORDER}` }}>
-                  <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style={{ background: `${jur.color}22` }}>
-                    {jur.emoji}
-                  </div>
-                  <h4 className="font-black text-white text-sm">{jur.title}</h4>
-                  <p className="text-xs text-white/50 leading-relaxed">{jur.desc}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* Kalender & Keterangan */}
-          <section className="w-full px-6 py-4 max-w-7xl mx-auto">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Calendar */}
-              <div className="rounded-2xl p-6 space-y-4" style={{ background: BG2, border: `1px solid ${BORDER}` }}>
-                <h3 className="font-black text-white text-sm uppercase tracking-wider flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-blue-400" /> Kalender Pendidikan — Januari 2026
-                </h3>
-                <div className="grid grid-cols-7 gap-1 text-center">
-                  {["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"].map(d => (
-                    <div key={d} className="text-[10px] font-black text-white/30 uppercase py-1">{d}</div>
-                  ))}
-                  {[null, null, null, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31].map((day, i) => (
-                    <div key={i} className={`text-xs py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
-                      day === 15 ? "text-white font-black" : day ? "text-white/60 hover:text-white hover:bg-white/05" : ""
-                    }`} style={day === 15 ? { background: BLUE } : {}}>
-                      {day || ""}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Keterangan */}
-              <div className="rounded-2xl p-6 space-y-4" style={{ background: BG2, border: `1px solid ${BORDER}` }}>
-                <h3 className="font-black text-white text-sm uppercase tracking-wider flex items-center gap-2">
-                  <Info className="w-4 h-4 text-blue-400" /> Keterangan
-                </h3>
-                <div className="space-y-3">
-                  {[
-                    { color: "#3b82f6", label: "Hari Efektif Belajar", desc: "Kegiatan belajar mengajar reguler" },
-                    { color: "#10b981", label: "Hari Libur Sekolah", desc: "Libur resmi dan libur nasional" },
-                    { color: "#f59e0b", label: "Kegiatan Khusus", desc: "Ujian, lomba, atau kegiatan sekolah" },
-                    { color: "#ef4444", label: "Tanggal Merah/Nasional", desc: "Hari libur nasional resmi" },
-                  ].map((item, i) => (
-                    <div key={i} className="flex items-center gap-3">
-                      <span className="w-3 h-3 rounded-full shrink-0" style={{ background: item.color }} />
-                      <div>
-                        <div className="text-xs font-bold text-white/80">{item.label}</div>
-                        <div className="text-[10px] text-white/40">{item.desc}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="mt-4 p-4 rounded-xl space-y-2" style={{ background: BG3, border: `1px solid ${BORDER}` }}>
-                  <div className="text-xs font-black text-white uppercase tracking-wider">Potensi Daerah</div>
-                  <p className="text-[11px] text-white/50 leading-relaxed">
-                    {schoolName} berlokasi di Kecamatan {d.kecamatan}, Sulawesi Tengah — daerah dengan potensi sumber daya alam dan budaya yang kaya untuk mendukung pembelajaran kontekstual.
-                  </p>
-                  <button
-                    onClick={() => setActivePage("fasilitas")}
-                    className="text-xs font-black flex items-center gap-1 cursor-pointer transition-all hover:opacity-80"
-                    style={{ color: BLUE }}>
-                    Lihat Fasilitas <ChevronRight className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </section>
-        </div>
-      )}
-
-      {/* ════════════════ BERITA & PENGUMUMAN ════════════════ */}
-      {activePage === "berita" && (
-        <div className="w-full max-w-7xl mx-auto px-6 py-8">
-          {/* Featured + Pengumuman */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-            {/* Featured News */}
-            <div className="lg:col-span-2 rounded-2xl overflow-hidden relative" style={{ background: BG2, border: `1px solid ${BORDER}` }}>
-              <div className="h-48 flex items-center justify-center text-[80px]" style={{ background: BG3 }}>
-                {newsItems[0].img}
-              </div>
-              <div className="p-6 space-y-3">
-                <div className="flex gap-2">
-                  <span className="px-2.5 py-0.5 rounded text-[10px] font-black uppercase" style={{ background: newsItems[0].tagColor }}>
-                    {newsItems[0].tag}
-                  </span>
-                  <span className="text-[10px] text-white/40 flex items-center gap-1"><Clock className="w-3 h-3" />{newsItems[0].time}</span>
-                  <span className="text-[10px] text-white/40 flex items-center gap-1"><Calendar className="w-3 h-3" />{newsItems[0].date}</span>
-                </div>
-                <h2 className="text-base font-black text-white leading-snug">{newsItems[0].title}</h2>
-                <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black uppercase cursor-pointer transition-all hover:opacity-90"
-                  style={{ background: BLUE }}>
-                  Baca Selengkapnya
-                </button>
-              </div>
-            </div>
-
-            {/* Pengumuman Sidebar */}
-            <div className="rounded-2xl p-5 space-y-4" style={{ background: BG2, border: `1px solid ${BORDER}` }}>
-              <div className="flex items-center justify-between">
-                <h3 className="font-black text-white text-sm uppercase tracking-wider flex items-center gap-2">
-                  <Bell className="w-4 h-4 text-blue-400" /> Pengumuman
-                </h3>
-                <span className="text-[10px] text-blue-400 cursor-pointer">All item</span>
-              </div>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/30" />
-                <input className="w-full bg-transparent border rounded-lg pl-8 pr-3 py-2 text-xs text-white/70 outline-none"
-                  style={{ borderColor: BORDER }} placeholder="Cari judul..." />
-              </div>
-              <div className="space-y-3">
-                {announcements.map((ann, i) => (
-                  <div key={i} className="flex gap-3 cursor-pointer group">
-                    <div className="w-10 h-10 rounded-lg flex items-center justify-center text-xl shrink-0" style={{ background: BG3 }}>
-                      {ann.img}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[11px] font-semibold text-white/80 leading-snug group-hover:text-white line-clamp-2">{ann.title}</p>
-                      <div className="flex gap-2 mt-1 text-[9px] text-white/30">
-                        <span>{ann.time}</span>
-                        <span>{ann.date}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+          {/* Center: Portal Logo */}
+          <div className="flex items-center justify-center shrink-0 mx-2">
+            <img src="/logo.png" className="h-7 md:h-9 object-contain" alt="Portal Logo" />
           </div>
 
-          {/* Filter Tabs */}
-          <div className="flex items-center gap-4 mb-6">
-            {(["Umum", "Sekolah"] as const).map(f => (
-              <button key={f} onClick={() => setNewsFilter(f)}
-                className="px-5 py-2 rounded-lg text-xs font-black uppercase cursor-pointer transition-all"
-                style={{ background: newsFilter === f ? BLUE : BG2, color: newsFilter === f ? "white" : "rgba(255,255,255,0.5)", border: `1px solid ${newsFilter === f ? "transparent" : BORDER}` }}>
-                {f}
-              </button>
-            ))}
-            <div className="ml-auto relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/30" />
-              <input className="bg-transparent border rounded-lg pl-8 pr-3 py-2 text-xs text-white/70 outline-none w-48"
-                style={{ borderColor: BORDER }} placeholder="cari artikel disini..." />
-            </div>
-          </div>
+          {/* Right side: Map Action Buttons */}
+          <div className="flex items-center gap-2 shrink-0 pointer-events-auto">
+            {/* Zoom In */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                mapInstance?.zoomIn();
+              }}
+              className="w-8 h-8 md:w-9 md:h-9 bg-indigo-950 hover:bg-indigo-900 text-white rounded-full flex items-center justify-center transition-colors shadow-sm cursor-pointer"
+              title="Perbesar Peta"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
 
-          {/* News List */}
-          <div className="space-y-4">
-            {filteredNews.map((news, i) => (
-              <div key={i} className="flex gap-5 p-5 rounded-2xl cursor-pointer group transition-all hover:border-blue-500/50"
-                style={{ background: BG2, border: `1px solid ${BORDER}` }}>
-                <div className="w-24 h-20 rounded-xl flex items-center justify-center text-4xl shrink-0" style={{ background: BG3 }}>
-                  {news.img}
-                </div>
-                <div className="flex-1 space-y-2">
-                  <h3 className="text-sm font-black text-white group-hover:text-blue-400 transition-colors leading-snug">{news.title}</h3>
-                  <div className="flex gap-3 text-[10px] text-white/40">
-                    <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{news.time}</span>
-                    <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{news.date}</span>
-                  </div>
-                </div>
-                <button className="self-center px-4 py-2 rounded-lg text-[10px] font-black uppercase cursor-pointer flex-shrink-0"
-                  style={{ background: `${BLUE}22`, color: BLUE, border: `1px solid ${BLUE}44` }}>
-                  {news.read}
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+            {/* Zoom Out */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                mapInstance?.zoomOut();
+              }}
+              className="w-8 h-8 md:w-9 md:h-9 bg-indigo-950 hover:bg-indigo-900 text-white rounded-full flex items-center justify-center transition-colors shadow-sm cursor-pointer"
+              title="Perkecil Peta"
+            >
+              <Minus className="w-4 h-4" />
+            </button>
 
-      {/* ════════════════ VIDEO ════════════════ */}
-      {activePage === "video" && (
-        <div>
-          {/* Featured Video */}
-          <section className="relative w-full h-[360px] flex items-end"
-            style={{ background: "linear-gradient(135deg, #0a0a1a 0%, #1a1a3e 100%)" }}>
-            <div className="absolute inset-0 flex items-center justify-center text-[150px] opacity-10 pointer-events-none">
-              {featuredVideo.thumb}
-            </div>
-            <div className="absolute inset-0" style={{ background: "linear-gradient(to right, rgba(13,17,23,0.85) 50%, transparent)" }} />
-            {/* Play button center */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-16 h-16 rounded-full flex items-center justify-center cursor-pointer transition-transform hover:scale-110"
-                style={{ background: BLUE }}>
-                <Play className="w-6 h-6 text-white ml-1" />
-              </div>
-            </div>
-            <div className="relative z-10 p-10 max-w-lg">
-              <div className="flex gap-3 mb-3 text-[10px] text-white/50">
-                <span className="flex items-center gap-1"><Eye className="w-3 h-3" /> {featuredVideo.views} ditonton</span>
-                <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {featuredVideo.time}</span>
-              </div>
-              <h2 className="text-xl font-black text-white leading-snug">{featuredVideo.title}</h2>
-            </div>
-          </section>
-
-          <div className="w-full max-w-7xl mx-auto px-6 py-8">
-            {/* Filter & Search */}
-            <div className="flex items-center gap-4 mb-6">
-              {(["Sekolah", "Umum"] as const).map(f => (
-                <button key={f} onClick={() => setVideoFilter(f)}
-                  className="px-5 py-2 rounded-lg text-xs font-black uppercase cursor-pointer transition-all"
-                  style={{ background: videoFilter === f ? BLUE : BG2, color: videoFilter === f ? "white" : "rgba(255,255,255,0.5)", border: `1px solid ${videoFilter === f ? "transparent" : BORDER}` }}>
-                  {f}
-                </button>
-              ))}
-              <div className="ml-auto relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/30" />
-                <input className="bg-transparent border rounded-lg pl-8 pr-3 py-2 text-xs text-white/70 outline-none w-56"
-                  style={{ borderColor: BORDER }} placeholder="Tuliskan judul video yang ingin kamu cari disini" />
-              </div>
-            </div>
-
-            {/* Video Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredVideos.map((video, i) => (
-                <div key={i} className="rounded-2xl overflow-hidden cursor-pointer group transition-all hover:border-blue-500/50"
-                  style={{ background: BG2, border: `1px solid ${BORDER}` }}>
-                  <div className="relative h-36 flex items-center justify-center text-5xl" style={{ background: BG3 }}>
-                    {video.thumb}
-                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Play className="w-8 h-8 text-white" />
-                    </div>
-                    {/* Duration badge */}
-                    <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded text-[10px] font-black" style={{ background: "rgba(0,0,0,0.8)" }}>
-                      {video.duration}
-                    </div>
-                  </div>
-                  <div className="p-4 space-y-2">
-                    <p className="text-xs font-bold text-white/80 leading-snug line-clamp-2">{video.title}</p>
-                    <div className="flex gap-3 text-[10px] text-white/40">
-                      <span className="flex items-center gap-1"><Eye className="w-3 h-3" />{video.views} ditonton</span>
-                      <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{video.time}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ════════════════ PERPUSTAKAAN ════════════════ */}
-      {activePage === "perpustakaan" && (
-        <div className="w-full max-w-7xl mx-auto px-6 py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left: Search + Book List */}
-            <div className="space-y-4">
-              {/* Search */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
-                <input
-                  value={bookQuery}
-                  onChange={e => setBookQuery(e.target.value)}
-                  className="w-full bg-transparent border rounded-xl pl-10 pr-4 py-3 text-sm text-white/70 outline-none"
-                  style={{ borderColor: BORDER, background: BG2 }} placeholder="Cari Kelas" />
-              </div>
-
-              {/* Category Tabs */}
-              <div className="flex gap-2">
-                {(["IPA", "IPS", "Bahasa"] as const).map(cat => (
-                  <button key={cat} onClick={() => { setBookCategory(cat); setSelectedBook(0); }}
-                    className="px-4 py-1.5 rounded-lg text-xs font-black uppercase cursor-pointer transition-all"
-                    style={{
-                      background: bookCategory === cat ? BLUE : BG2,
-                      color: bookCategory === cat ? "white" : "rgba(255,255,255,0.4)",
-                      border: `1px solid ${bookCategory === cat ? "transparent" : BORDER}`
-                    }}>
-                    {cat}
-                  </button>
-                ))}
-              </div>
-
-              {/* Book List */}
-              <div className="space-y-3">
-                {activeBooks.filter(b => b.title.toLowerCase().includes(bookQuery.toLowerCase())).map((book, i) => (
-                  <div
-                    key={i}
-                    onClick={() => setSelectedBook(i)}
-                    className="flex gap-4 p-4 rounded-xl cursor-pointer transition-all"
-                    style={{
-                      background: selectedBook === i ? BLUE : BG2,
-                      border: `1px solid ${selectedBook === i ? "transparent" : BORDER}`,
-                    }}
-                  >
-                    <div className="w-12 h-16 rounded-lg flex items-center justify-center text-3xl shrink-0" style={{ background: "rgba(0,0,0,0.2)" }}>
-                      {book.cover}
-                    </div>
-                    <div className="flex-1 space-y-1">
-                      <p className="text-sm font-black text-white leading-snug">{book.title}</p>
-                      <StarRating rating={Math.floor(book.rating)} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Right: Book Detail */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Main book detail */}
-              <div className="flex flex-col sm:flex-row gap-8 p-6 rounded-2xl" style={{ background: BG2, border: `1px solid ${BORDER}` }}>
-                <div className="w-40 h-52 rounded-2xl flex items-center justify-center text-7xl shrink-0 self-start"
-                  style={{ background: BG3 }}>
-                  {currentBook.cover}
-                </div>
-                <div className="flex-1 space-y-4">
-                  <h2 className="text-xl font-black text-white leading-snug">{currentBook.title}</h2>
-                  <StarRating rating={Math.floor(currentBook.rating)} />
-                  <p className="text-sm text-white/60 leading-relaxed">{currentBook.desc}</p>
-                  <div className="flex gap-3">
-                    <button className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-black cursor-pointer transition-all hover:opacity-90"
-                      style={{ background: BG3, border: `1px solid ${BORDER}` }}>
-                      <BookOpen className="w-4 h-4 text-blue-400" /> Baca
-                    </button>
-                    <button className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-black cursor-pointer transition-all hover:opacity-90"
-                      style={{ background: BLUE }}>
-                      <Download className="w-4 h-4" /> Download
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Related books */}
-              <div className="space-y-3">
-                <h3 className="font-black text-white text-sm uppercase tracking-wider">Buku Serupa</h3>
-                <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
-                  {relatedBooks.map((rb, i) => (
-                    <div key={i} className="rounded-xl p-3 flex flex-col items-center gap-2 cursor-pointer hover:border-blue-500/50 transition-all"
-                      style={{ background: BG2, border: `1px solid ${BORDER}` }}>
-                      <span className="text-2xl">{rb.cover}</span>
-                      <p className="text-[10px] font-bold text-white/70 text-center leading-tight">{rb.title}</p>
-                      <StarRating rating={rb.rating} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ════════════════ FASILITAS ════════════════ */}
-      {activePage === "fasilitas" && (
-        <div>
-          {/* Hero */}
-          <section className="relative w-full h-60 flex items-end overflow-hidden"
-            style={{ background: "linear-gradient(135deg, #0f1729 0%, #1e3a8a 100%)" }}>
-            <div className="absolute inset-0 flex items-center justify-center text-[160px] opacity-10 pointer-events-none select-none">🏫</div>
-            <div className="absolute inset-0" style={{ background: "linear-gradient(to right, rgba(13,17,23,0.85) 50%, transparent)" }} />
-            <div className="relative z-10 p-10 max-w-xl">
-              <h1 className="text-3xl font-black text-white leading-tight">Fasilitas<br />Sekolah</h1>
-              <p className="text-sm text-white/60 mt-2 leading-relaxed">
-                Fasilitas merupakan salah satu faktor penting dalam mendukung kegiatan belajar mengajar yang efektif dan menyenangkan.
-              </p>
-            </div>
-          </section>
-
-          {/* Fasilitas Grid */}
-          <div className="w-full max-w-7xl mx-auto px-6 py-10 space-y-8">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {facilities.map((fac, i) => (
-                <div key={i} className="rounded-2xl overflow-hidden" style={{ background: BG2, border: `1px solid ${BORDER}` }}>
-                  <div className="h-28 flex items-center justify-center text-6xl" style={{ background: BG3 }}>
-                    {fac.icon}
-                  </div>
-                  <div className="p-5 space-y-3">
-                    <h3 className="font-black text-white text-sm">{fac.title}</h3>
-                    <p className="text-xs text-white/50 leading-relaxed">{fac.desc}</p>
-
-                    {/* File Downloads */}
-                    <div className="space-y-2 pt-2">
-                      {fac.files.map((file, fi) => (
-                        <div key={fi} className="flex items-center justify-between p-3 rounded-xl"
-                          style={{ background: BG3, border: `1px solid ${BORDER}` }}>
-                          <div className="flex items-center gap-2">
-                            <FileText className="w-3.5 h-3.5 text-blue-400" />
-                            <span className="text-xs font-bold text-white/70">{file}</span>
-                          </div>
-                          <div className="flex gap-2">
-                            <button className="w-7 h-7 rounded-full flex items-center justify-center cursor-pointer transition-all hover:opacity-80"
-                              style={{ background: BG, border: `1px solid ${BORDER}` }}>
-                              <Eye className="w-3.5 h-3.5 text-white/50" />
-                            </button>
-                            <button className="w-7 h-7 rounded-full flex items-center justify-center cursor-pointer transition-all hover:opacity-80"
-                              style={{ background: BLUE }}>
-                              <Download className="w-3.5 h-3.5 text-white" />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ════════════════ GURU & SISWA ════════════════ */}
-      {activePage === "guru-siswa" && (
-        <div className="w-full max-w-7xl mx-auto px-6 py-10 space-y-8">
-          <h2 className="text-xl font-black text-white uppercase tracking-wider">Data Guru & Siswa</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {[
-              { label: "Total Guru", value: d.totalTeachers, icon: "👨‍🏫", color: BLUE },
-              { label: "Guru PNS", value: d.pnsCount, icon: "🏛️", color: "#8b5cf6" },
-              { label: "Guru Honorer", value: d.nonPnsCount, icon: "📋", color: "#f59e0b" },
-              { label: "Total Siswa", value: d.studentCount, icon: "🎓", color: "#10b981" },
-            ].map((item, i) => (
-              <div key={i} className="rounded-2xl p-6 text-center space-y-2"
-                style={{ background: BG2, border: `1px solid ${BORDER}` }}>
-                <span className="text-3xl">{item.icon}</span>
-                <div className="text-2xl font-black text-white">{item.value}</div>
-                <div className="text-[10px] font-black uppercase tracking-wider" style={{ color: item.color }}>{item.label}</div>
-              </div>
-            ))}
-          </div>
-          <div className="rounded-2xl p-8 text-center" style={{ background: BG2, border: `1px solid ${BORDER}` }}>
-            <div className="text-white/30 text-sm">Data detail guru & siswa akan tersedia setelah integrasi Dapodik.</div>
-          </div>
-        </div>
-      )}
-
-      {/* ════════════════ ARSIP ════════════════ */}
-      {activePage === "arsip" && (
-        <div className="w-full max-w-7xl mx-auto px-6 py-10 space-y-6">
-          <h2 className="text-xl font-black text-white uppercase tracking-wider flex items-center gap-3">
-            <Archive className="w-5 h-5 text-blue-400" /> Arsip Dokumen Sekolah
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {[
-              "Laporan BOS Triwulan I 2026", "Laporan BOS Triwulan II 2026",
-              "Dokumen Akreditasi 2024", "SK Pembagian Tugas Guru 2025",
-              "Jadwal Pelajaran Ganjil 2025", "Daftar Inventaris Sekolah 2025",
-              "Laporan Pertanggungjawaban PPDB", "Rencana Kerja Sekolah (RKS) 2025",
-            ].map((doc, i) => (
-              <div key={i} className="flex items-center justify-between p-5 rounded-2xl cursor-pointer group hover:border-blue-500/50 transition-all"
-                style={{ background: BG2, border: `1px solid ${BORDER}` }}>
-                <div className="flex items-center gap-3">
-                  <FileText className="w-5 h-5 text-blue-400" />
-                  <span className="text-sm font-bold text-white/80 group-hover:text-white">{doc}</span>
-                </div>
-                <div className="flex gap-2">
-                  <button className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: BG3, border: `1px solid ${BORDER}` }}>
-                    <Eye className="w-3.5 h-3.5 text-white/50" />
-                  </button>
-                  <button className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: BLUE }}>
-                    <Download className="w-3.5 h-3.5 text-white" />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ── FOOTER ─────────────────────────────────────────────── */}
-      <footer className="w-full mt-10 pt-10 pb-6" style={{ background: BG2, borderTop: `1px solid ${BORDER}` }}>
-        <div className="w-full max-w-7xl mx-auto px-6">
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-8 pb-8 border-b" style={{ borderColor: BORDER }}>
-            {/* Brand */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: BLUE }}>
-                  <Zap className="w-4 h-4 text-white" />
-                </div>
-                <span className="font-black text-white text-sm">sekolahku</span>
-              </div>
-              <div className="text-[11px] text-white/40 leading-relaxed space-y-1">
-                <p>{d.address}</p>
-              </div>
-              <div className="space-y-1.5 text-[11px] text-white/50">
-                <div className="flex items-center gap-2"><Mail className="w-3.5 h-3.5 text-blue-400" />{d.email}</div>
-                <div className="flex items-center gap-2"><Phone className="w-3.5 h-3.5 text-blue-400" />{d.phone}</div>
-              </div>
-            </div>
-
-            {/* Link Terkait */}
-            <div className="space-y-4">
-              <h4 className="font-black text-white text-xs uppercase tracking-wider">Link terkait</h4>
-              <ul className="space-y-2 text-[11px] text-white/40">
-                <li className="flex items-center gap-1 cursor-pointer hover:text-blue-400 transition-colors">
-                  <ChevronRight className="w-3 h-3" /> Dinas Pendidikan Provinsi Sulawesi Tengah
-                </li>
-                <li className="flex items-center gap-1 cursor-pointer hover:text-blue-400 transition-colors">
-                  <ChevronRight className="w-3 h-3" /> Pemerintah Provinsi Sulawesi Tengah
-                </li>
-                <li className="flex items-center gap-1 cursor-pointer hover:text-blue-400 transition-colors">
-                  <ChevronRight className="w-3 h-3" /> Kemdikbud RI
-                </li>
-              </ul>
-            </div>
-
-            {/* Legal */}
-            <div className="space-y-4">
-              <h4 className="font-black text-white text-xs uppercase tracking-wider">Legal</h4>
-              <ul className="space-y-2 text-[11px] text-white/40">
-                <li className="cursor-pointer hover:text-white transition-colors">Privacy Policy</li>
-                <li className="cursor-pointer hover:text-white transition-colors">Term of Service</li>
-              </ul>
-            </div>
-
-            {/* Sosial Media */}
-            <div className="space-y-4">
-              <h4 className="font-black text-white text-xs uppercase tracking-wider">Sosial Media</h4>
-              <div className="flex gap-2">
-                {[
-                  { icon: Globe2, label: "Facebook" },
-                  { icon: Link2, label: "LinkedIn" },
-                  { icon: Share2, label: "Twitter" },
-                ].map((sm, i) => (
-                  <button key={i} className="w-8 h-8 rounded-full flex items-center justify-center cursor-pointer transition-all hover:opacity-80"
-                    style={{ background: BG3, border: `1px solid ${BORDER}` }}>
-                    <sm.icon className="w-3.5 h-3.5 text-white/60" />
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* CTA */}
-          <div className="py-8 text-center space-y-3">
-            <div className="text-xs font-bold text-white/40 uppercase">Belum Punya Website</div>
-            <h3 className="text-xl font-black text-white">Hubungi Kami Sekarang!</h3>
-            <button className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-black uppercase cursor-pointer transition-all hover:opacity-90 mx-auto"
-              style={{ background: BLUE }}>
-              <Phone className="w-4 h-4" /> Hubungi
+            {/* Center / Focus */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (mapInstance) {
+                  mapInstance.setView([centerLat, centerLng], 20, { animate: true });
+                }
+              }}
+              className="w-8 h-8 md:w-9 md:h-9 bg-indigo-950 hover:bg-indigo-900 text-white rounded-full flex items-center justify-center transition-colors shadow-sm cursor-pointer"
+              title="Fokus ke Sekolah"
+            >
+              <Target className="w-4 h-4 text-blue-300 animate-pulse" />
             </button>
           </div>
+        </div>
 
-          <div className="border-t pt-4 text-center text-[10px] text-white/20" style={{ borderColor: BORDER }}>
-            © 2026 <span className="font-black text-white/40">{schoolName}</span>. All Rights Reserved.
+        {/* Map Background (BASE) - BEHIND EVERYTHING & SCROLLS UP */}
+        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+          <div className="w-full h-full scale-[1.1] flex items-center justify-center">
+            {!isSchoolMode && (
+              <SulawesiMap
+                layer="base"
+                onlyShowId={numericId}
+                customCenter={MAP_CENTER}
+                customZoom={MAP_ZOOM}
+              />
+            )}
           </div>
         </div>
-      </footer>
 
-      <style>{`
-        .scrollbar-none::-webkit-scrollbar { display: none; }
-        .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
-        .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-      `}</style>
+        {/* Map Background (INTERACTIVE) - BEHIND THE OVERLAYS & SCROLLS UP */}
+        <div className="absolute inset-0 z-5 overflow-hidden">
+          <div className="w-full h-full scale-[1.1] flex items-center justify-center">
+            {isSchoolMode ? (
+              <MapContainer
+                key={`school-interactive-map-${centerLat}-${centerLng}`}
+                center={[centerLat, centerLng]}
+                zoom={20}
+                zoomControl={false}
+                scrollWheelZoom={false}
+                dragging={true}
+                className="school-leaflet-tiles w-full h-full"
+                style={{ width: "100%", height: "100%" }}
+              >
+                <TileLayer 
+                  url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" 
+                  maxZoom={20}
+                  maxNativeZoom={20}
+                />
+                <MapInstanceCapture setMap={setMapInstance} />
+                {schoolDetail?.polygon && Array.isArray(schoolDetail.polygon) && schoolDetail.polygon.length > 0 && (
+                  <Polygon
+                    positions={schoolDetail.polygon}
+                    pathOptions={{
+                      color: "#93c5fd",
+                      weight: 2,
+                      fillColor: "#eff6ff",
+                      fillOpacity: 1.0,
+                    }}
+                  />
+                )}
+
+                {schoolDetail?.gedung_detail?.map((g: any, index: number) => {
+                  if (!g.polygon || !Array.isArray(g.polygon) || g.polygon.length === 0) return null;
+                  const isActive = g.id === activeGedung?.id;
+
+                  // Calculate center coordinates for marker placement
+                  let latSum = 0;
+                  let lngSum = 0;
+                  g.polygon.forEach((coord: any) => {
+                    latSum += parseFloat(coord[0]);
+                    lngSum += parseFloat(coord[1]);
+                  });
+                  const centerCoord: [number, number] = [latSum / g.polygon.length, lngSum / g.polygon.length];
+
+                  return (
+                    <Fragment key={`building-group-${g.id || index}`}>
+                      <Polygon
+                        positions={g.polygon}
+                        pathOptions={{
+                          color: "#2563eb",
+                          weight: 1.5,
+                          dashArray: isActive ? undefined : "4, 4",
+                          fillColor: isActive ? "#2563eb" : "#dbeafe",
+                          fillOpacity: 1.0,
+                        }}
+                        eventHandlers={{
+                          click: (e) => {
+                            L.DomEvent.stopPropagation(e);
+                            setActiveGedung(g);
+                            setActiveRoom(g.ruangan && g.ruangan.length > 0 ? g.ruangan[0] : null);
+                          }
+                        }}
+                      >
+                        <Tooltip
+                          permanent={true}
+                          direction="bottom"
+                          offset={[0, 10]}
+                          className={`building-tooltip ${isActive ? "active-building-tooltip" : ""}`}
+                        >
+                          {g.name}
+                        </Tooltip>
+                      </Polygon>
+                      <Marker 
+                        position={centerCoord} 
+                        icon={buildingCenterMarkerIcon}
+                        eventHandlers={{
+                          click: (e) => {
+                            L.DomEvent.stopPropagation(e);
+                            setActiveGedung(g);
+                            setActiveRoom(g.ruangan && g.ruangan.length > 0 ? g.ruangan[0] : null);
+                          }
+                        }}
+                      />
+                    </Fragment>
+                  );
+                })}
+              </MapContainer>
+            ) : (
+              <SulawesiMap
+                layer="interactive"
+                onlyShowId={numericId}
+                markers={isSchoolMode ? [] : (portalData?.summary?.mapMarkers || [])}
+                schools={isSchoolMode ? (activeSchool ? [activeSchool] : []) : (data?.schools || [])}
+                customCenter={MAP_CENTER}
+                customZoom={MAP_ZOOM}
+                onSchoolClick={(school) => {
+                  if (isSchoolMode) {
+                    setSelectedSchoolForDetail(school);
+                    setIsSchoolDetailOpen(true);
+                  } else {
+                    setSchoolSearch(school.name);
+                    setSelectedSchoolForMap(school);
+                  }
+                }}
+                selectedSchool={isSchoolMode ? activeSchool : selectedSchoolForMap}
+                onPopupClose={() => {
+                  if (!isSchoolMode) {
+                    setSchoolSearch("");
+                    setSelectedSchoolForMap(null);
+                  }
+                }}
+              />
+            )}
+          </div>
+        </div>
+
+        {/* Main Content Layout Container */}
+        <div className="relative z-10 w-full flex flex-col min-h-screen pt-28 pb-10 px-10 gap-10 pointer-events-none">
+
+          {/* Grid Area */}
+          <div className="w-full flex flex-col lg:flex-row gap-8 items-stretch flex-1">
+
+            {/* Left side: Projections and Summary Counters */}
+            <div className="flex-[3] flex flex-col gap-6 pointer-events-none">
+              <div className="w-full lg:w-1/3 pointer-events-auto">
+                <ProyeksiCard
+                  projections={data?.projections}
+                  onFilterChange={handleProyeksiFilterChange}
+                  onOpenDetail={(cat) => setActiveCategoryDetail(cat)}
+                  onOpenJatuhTempoDetail={(cat) => setActiveJatuhTempoDetail(cat)}
+                  isLoading={loading}
+                />
+              </div>
+            </div>
+
+            {/* Right side: School List / School Information Card */}
+            <div className="flex-[1] relative min-h-[400px] lg:min-h-0 pointer-events-none">
+              <div className="lg:absolute lg:inset-0 flex flex-col gap-6 pointer-events-auto">
+                {isSchoolMode ? (
+                  /* --- MODE SEKOLAH: INFORMASI UMUM SEKOLAH --- */
+                  <div className="w-full flex-1 overflow-y-auto pr-1 scrollbar-hide flex flex-col gap-6">
+                    <div className="bg-white rounded-[2.5rem] p-6 md:p-8 flex flex-col gap-6 border border-slate-100 shadow-xl">
+                      
+                      {/* Nested Building/Room Detail Card (if clicked) */}
+                      {activeGedung && (
+                        <div className="bg-[#f8fafc] rounded-[1.8rem] p-5 md:p-6 flex flex-col gap-4 relative border border-slate-200/50">
+                          {/* Close Button */}
+                          <button 
+                            onClick={() => {
+                              setActiveGedung(null);
+                              setActiveRoom(null);
+                            }}
+                            className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 hover:bg-slate-200/40 p-1.5 rounded-full cursor-pointer transition-colors"
+                            title="Tutup Detail"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+
+                          {/* Building/Room Title & Description */}
+                          <div className="flex flex-col gap-1 pr-6">
+                            <h3 className="text-lg font-black text-slate-800 tracking-tight leading-snug">
+                              {activeRoom?.name || activeGedung?.name}
+                            </h3>
+                            <p className="text-xs text-slate-500 font-semibold leading-relaxed">
+                              {activeRoom?.deskripsi || activeGedung?.deskripsi || "digunakan untuk kegiatan belajar mengajar dan penunjang sekolah."}
+                            </p>
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="flex gap-2.5">
+                            {/* Lihat Foto Button */}
+                            <button 
+                              onClick={() => {
+                                setIsPhotoModalOpen(true);
+                                setActivePhotoIndex(0);
+                              }}
+                              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-2.5 px-3.5 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm hover:scale-[1.02]"
+                            >
+                              <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                              </svg>
+                              <span>Lihat Foto</span>
+                            </button>
+
+                            {/* Live CCTV Button */}
+                            <button 
+                              onClick={() => setIsCctvModalOpen(true)}
+                              className="flex-1 bg-[#eff6ff] hover:bg-[#dbeafe] text-blue-700 border border-blue-100 rounded-xl py-2.5 px-3.5 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer hover:scale-[1.02]"
+                            >
+                              <svg className="w-4 h-4 text-red-500 animate-pulse shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <circle cx="12" cy="12" r="2"></circle>
+                                <path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"></path>
+                              </svg>
+                              <span className="font-extrabold">Live CCTV</span>
+                            </button>
+                          </div>
+
+                          {/* Detail Informasi */}
+                          <div className="flex flex-col gap-2.5 mt-2 border-t border-slate-200/60 pt-4">
+                            <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider">Detail Informasi</h4>
+                            <div className="flex flex-col gap-1">
+                              {activeGedung?.ruangan?.map((r: any) => (
+                                <div key={r.id} className="flex justify-between items-center py-2 border-b border-slate-100 text-xs font-bold">
+                                  <span className="text-slate-400 font-semibold">Kondisi Infrastruktur {r.name}</span>
+                                  <span className="text-slate-800 font-extrabold">{r.status_kelayakan || "Layak"}</span>
+                                </div>
+                              ))}
+                              <div className="flex justify-between items-center py-2 text-xs font-bold">
+                                <span className="text-slate-400 font-semibold">Tahun Pembangunan</span>
+                                <span className="text-slate-800 font-extrabold">{activeGedung?.tahun_pembangunan || "-"}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Informasi Sekolah Section */}
+                      <div className="flex flex-col gap-4">
+                        <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider">Informasi Sekolah</h3>
+                        <div className="flex flex-col gap-1 text-xs font-bold text-slate-800">
+                          <div className="flex justify-between items-center py-2.5 border-b border-slate-100">
+                            <span className="text-slate-400 font-semibold">Nama Sekolah</span>
+                            <span className="text-slate-800 font-extrabold text-right ml-4">{schoolName}</span>
+                          </div>
+                          
+                          <div className="flex justify-between items-center py-2.5 border-b border-slate-100">
+                            <span className="text-slate-400 font-semibold">Akreditasi</span>
+                            <span className="text-slate-800 font-extrabold">{schoolD?.accreditation || "A"}</span>
+                          </div>
+
+                          <div className="flex justify-between items-center py-2.5 border-b border-slate-100">
+                            <span className="text-slate-400 font-semibold">NPSN</span>
+                            <span className="text-slate-800 font-extrabold font-mono">{schoolDetail?.npsn || "-"}</span>
+                          </div>
+
+                          <div className="flex justify-between items-center py-2.5 border-b border-slate-100">
+                            <span className="text-slate-400 font-semibold">Status Sekolah</span>
+                            <span className="text-slate-800 font-extrabold capitalize">
+                              Sekolah {(schoolDetail?.status || "Negeri").toLowerCase()}
+                            </span>
+                          </div>
+
+                          <div className="flex justify-between items-center py-2.5 border-b border-slate-100">
+                            <span className="text-slate-400 font-semibold">Telpon</span>
+                            <span className="text-slate-800 font-extrabold">{schoolD?.principalPhone || "-"}</span>
+                          </div>
+
+                          <div className="flex justify-between items-center py-2.5">
+                            <span className="text-slate-400 font-semibold">Email</span>
+                            <span className="text-slate-800 font-extrabold truncate max-w-[200px]">{schoolD?.email || "-"}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Social Media Buttons */}
+                      <div className="flex items-center justify-center gap-3 mt-2">
+                        {/* Instagram */}
+                        <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full border border-slate-200 hover:border-blue-400 hover:bg-blue-50/50 flex items-center justify-center cursor-pointer transition-all duration-200 hover:scale-105">
+                          <svg className="w-4 h-4 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                            <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                            <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                          </svg>
+                        </a>
+                        {/* YouTube */}
+                        <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full border border-slate-200 hover:border-blue-400 hover:bg-blue-50/50 flex items-center justify-center cursor-pointer transition-all duration-200 hover:scale-105">
+                          <svg className="w-4 h-4 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"></path>
+                            <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"></polygon>
+                          </svg>
+                        </a>
+                        {/* Facebook */}
+                        <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full border border-slate-200 hover:border-blue-400 hover:bg-blue-50/50 flex items-center justify-center cursor-pointer transition-all duration-200 hover:scale-105">
+                          <svg className="w-4 h-4 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
+                          </svg>
+                        </a>
+                        {/* TikTok */}
+                        <a href="https://tiktok.com" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full border border-slate-200 hover:border-blue-400 hover:bg-blue-50/50 flex items-center justify-center cursor-pointer transition-all duration-200 hover:scale-105">
+                          <svg className="w-4 h-4 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"></path>
+                          </svg>
+                        </a>
+                      </div>
+
+                    </div>
+                  </div>
+                ) : (
+                  /* --- MODE REGIONAL (LAMA): DAFTAR SEKOLAH --- */
+                  <>
+                    {/* School List Title */}
+                    <div className="flex flex-col gap-1 text-left border-l-3 pl-4 border-[#2563EB] shrink-0 text-slate-800">
+                      <div className="font-bold">Sekolah</div>
+                      <div className="text-sm font-medium text-slate-400">
+                        Daftar Sekolah {regionName}
+                      </div>
+                    </div>
+
+                    {/* Search Bar Overlay */}
+                    <div className="relative group shrink-0">
+                      <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-blue-500 transition-colors" />
+                      <input
+                        type="text"
+                        placeholder="Cari sekolah..."
+                        value={schoolSearch}
+                        onChange={(e) => setSchoolSearch(e.target.value)}
+                        className="w-full bg-white/80 border border-white rounded-2xl py-3 pl-11 pr-4 text-xs font-bold focus:outline-none focus:ring-4 focus:ring-blue-50 focus:bg-white transition-all shadow-md"
+                      />
+                    </div>
+
+                    {/* Scrollable School Cards */}
+                    <div className="flex-1 lg:overflow-y-auto lg:pr-2 scrollbar-hide hover:scrollbar-thumb-gray-400 flex flex-col gap-4">
+                      {data?.schools
+                        ?.filter((s: any) =>
+                          s.name?.toLowerCase().includes(schoolSearch.toLowerCase())
+                        )
+                        .map((school: any) => {
+                          const isSwasta = school.name?.toUpperCase().includes("SWASTA");
+                          const isActive = school.id === schoolId;
+                          return (
+                            <div
+                              key={school.id}
+                              className={`glass-card rounded-[1.8rem] p-5 flex flex-col gap-4 border shadow-lg hover:scale-[1.02] transition-transform duration-300 ${
+                                isActive
+                                  ? "border-blue-500 ring-2 ring-blue-500/20 bg-blue-50/10"
+                                  : "border-white/60 hover:border-blue-400/80"
+                              }`}
+                            >
+                              {/* Upper Section */}
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-4">
+                                  <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${isSwasta ? 'bg-emerald-100 text-emerald-600' : 'bg-blue-100 text-blue-600'}`}>
+                                    <SchoolIcon className="w-5 h-5" />
+                                  </div>
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className="text-xs font-bold text-slate-800 leading-snug line-clamp-1">
+                                      {school.name}
+                                    </span>
+                                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                                      {isSwasta ? "SWASTA" : "NEGERI"}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${isSwasta ? "bg-emerald-500" : "bg-blue-500"}`} />
+                              </div>
+
+                              {/* Action Buttons Row */}
+                              <div className="grid grid-cols-2 gap-2 mt-1">
+                                <button
+                                  onClick={() => {
+                                    if (isActive) return;
+                                    navigate(`/sekolah2/${school.id}?name=${encodeURIComponent(school.name)}`);
+                                  }}
+                                  className={`${
+                                    isActive
+                                      ? "bg-blue-600 text-white"
+                                      : "bg-blue-50/80 hover:bg-blue-100 text-blue-600"
+                                  } text-[10px] font-black uppercase tracking-wider py-2.5 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm border border-blue-100/35`}
+                                >
+                                  <MapPin className="w-3.5 h-3.5" />
+                                  <span>{isActive ? "Sekolah Aktif" : "Cari Koordinat"}</span>
+                                </button>
+
+                                <button
+                                  onClick={() => {
+                                    setSelectedSchoolForDetail(school);
+                                    setIsSchoolDetailOpen(true);
+                                  }}
+                                  className="bg-slate-50/80 hover:bg-slate-100 text-slate-600 text-[10px] font-black uppercase tracking-wider py-2.5 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm border border-slate-100"
+                                >
+                                  <Eye className="w-3.5 h-3.5" />
+                                  <span>Klik Detail</span>
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+
+                      {data?.schools?.filter((s: any) =>
+                        s.name?.toLowerCase().includes(schoolSearch.toLowerCase())
+                      ).length === 0 && (
+                          <div className="py-10 text-center text-xs font-bold text-slate-400 uppercase tracking-widest">
+                            Tidak ada sekolah ditemukan
+                          </div>
+                        )}
+                    </div>
+                  </>
+                )}
+
+              </div>
+            </div>
+
+          </div>
+
+          {/* Bottom Area */}
+          <div className="w-full flex flex-col lg:flex-row justify-between items-start mt-10 gap-6 pointer-events-none">
+
+            {/* Neraca Buttons */}
+            <div className="flex gap-4 shrink-0 pointer-events-auto">
+              <div
+                className="w-64 p-6 rounded-[2.5rem] bg-gradient-to-b from-[#2588EB] to-[#5EAFFF] text-white flex flex-col gap-4 cursor-pointer hover:scale-105 transition-transform shadow-xl shadow-blue-500/20"
+                onClick={() => setIsNeracaOpen(true)}
+              >
+                <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                </div>
+                <div>
+                  <div className="font-bold text-sm">Neraca Dapodik</div>
+                  <p className="text-xs text-white/80 font-medium leading-relaxed">Data Pusat Dapodik GTK</p>
+                </div>
+                <button
+                  className="w-full py-3 bg-blue-700/50 rounded-2xl text-xs font-semibold border border-white/10 hover:bg-blue-500 transition-colors mt-auto cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsNeracaOpen(true);
+                  }}
+                >
+                  Lihat Data
+                </button>
+              </div>
+
+              <div
+                className="w-64 p-6 rounded-[2.5rem] bg-gradient-to-b from-[#10B981] to-[#34D399] text-white flex flex-col gap-4 cursor-pointer hover:scale-105 transition-transform shadow-xl shadow-emerald-500/20"
+                onClick={() => setIsNeracaRekapOpen(true)}
+              >
+                <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                </div>
+                <div>
+                  <div className="font-bold text-sm">Neraca Rekapan</div>
+                  <p className="text-xs text-white/80 font-medium leading-relaxed">Data Kepegawaian Daerah</p>
+                </div>
+                <button
+                  className="w-full py-3 bg-emerald-700/50 rounded-2xl text-xs font-semibold border border-white/10 hover:bg-emerald-500 transition-colors mt-auto cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsNeracaRekapOpen(true);
+                  }}
+                >
+                  Lihat Data
+                </button>
+              </div>
+            </div>
+
+            {/* Data Umum Satuan Pendidikan (sejajar dengan neraca) */}
+            <div className="flex-1 w-full pointer-events-auto">
+              <GeneralDataSection data={schoolSummary || data?.summary} />
+            </div>
+
+          </div>
+
+          {/* Footer Area */}
+          <footer className="py-0 flex flex-col items-center gap-6 opacity-50 mt-10 shrink-0">
+            <p className="text-center text-xs">
+              &copy; 2026 BLPT - Dinas Pendidikan Provinsi Sulawesi Tengah
+            </p>
+          </footer>
+
+        </div>
+      </main>
+
+      {isSchoolMode && (
+        <style>{`
+          .school-leaflet-tiles .leaflet-popup-content-wrapper {
+            background: rgba(255, 255, 255, 0.9) !important;
+            backdrop-filter: blur(8px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.6) !important;
+            border-radius: 16px !important;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08) !important;
+          }
+          .school-leaflet-tiles .leaflet-popup-tip {
+            background: rgba(255, 255, 255, 0.9) !important;
+          }
+          .building-tooltip {
+            background: white !important;
+            border: 1px solid rgba(59, 130, 246, 0.4) !important;
+            border-radius: 6px !important;
+            padding: 4px 8px !important;
+            font-size: 10px !important;
+            font-weight: 700 !important;
+            color: #1e293b !important;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15) !important;
+          }
+          .building-tooltip.active-building-tooltip {
+            background: #2563eb !important;
+            border: 1px solid #1d4ed8 !important;
+            color: white !important;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3) !important;
+          }
+          .building-tooltip::before {
+            display: none !important;
+          }
+        `}</style>
+      )}
+
+      {isPhotoModalOpen && (
+        <div className="fixed inset-0 z-[999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          {/* Modal Card */}
+          <div className="bg-white rounded-[2.5rem] p-8 max-w-4xl w-full border border-slate-100 shadow-2xl relative flex flex-col gap-6 animate-fadeIn pointer-events-auto">
+            {/* Header */}
+            <div className="flex justify-between items-center pb-2 border-b border-dashed border-slate-200">
+              <h3 className="text-xl font-black text-slate-800 tracking-tight">Detail Foto</h3>
+              <button
+                onClick={() => setIsPhotoModalOpen(false)}
+                className="w-10 h-10 bg-blue-600 hover:bg-blue-700 text-white rounded-full flex items-center justify-center shadow-lg transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {getPhotos().length === 0 ? (
+              <div className="flex flex-col items-center justify-center aspect-[16/9] w-full rounded-[2rem] bg-slate-50 border border-dashed border-slate-200 p-8 text-center gap-4">
+                <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <h4 className="text-base font-extrabold text-slate-700">Tidak Ada Data Foto</h4>
+                  <p className="text-xs text-slate-400 font-semibold max-w-sm">Dokumentasi foto untuk gedung ini belum diunggah atau tidak tersedia di database.</p>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Main Photo */}
+                <div className="relative aspect-[16/9] w-full rounded-[2rem] overflow-hidden bg-slate-100 border border-slate-200">
+                  <img
+                    src={getPhotos()[activePhotoIndex]}
+                    alt={`Detail Foto ${activePhotoIndex + 1}`}
+                    className="w-full h-full object-cover transition-all duration-300"
+                  />
+                </div>
+
+                {/* Thumbnails */}
+                <div className="flex justify-center items-center gap-6 py-2">
+                  {getPhotos().map((photo, index) => {
+                    const isActive = index === activePhotoIndex;
+                    return (
+                      <button
+                        key={index}
+                        onClick={() => setActivePhotoIndex(index)}
+                        className="flex flex-col items-center gap-2 group focus:outline-none cursor-pointer"
+                      >
+                        <div className={`w-28 h-16 rounded-2xl overflow-hidden transition-all duration-300 ${
+                          isActive
+                            ? "border-2 border-blue-500 scale-105 shadow-md"
+                            : "grayscale opacity-50 hover:grayscale-0 hover:opacity-100"
+                        }`}>
+                          <img
+                            src={photo}
+                            alt={`Thumbnail ${index + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <span className={`text-xs font-black tracking-wide ${isActive ? "text-slate-800" : "text-slate-400"}`}>
+                          Foto {index + 1}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {isCctvModalOpen && (
+        <div className="fixed inset-0 z-[999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-[2.5rem] p-8 max-w-md w-full border border-slate-100 shadow-2xl relative flex flex-col gap-6 animate-fadeIn pointer-events-auto">
+            {/* Header */}
+            <div className="flex justify-between items-center pb-2 border-b border-dashed border-slate-200">
+              <h3 className="text-lg font-black text-slate-800 tracking-tight">Live CCTV</h3>
+              <button
+                onClick={() => setIsCctvModalOpen(false)}
+                className="w-10 h-10 bg-blue-600 hover:bg-blue-700 text-white rounded-full flex items-center justify-center shadow-lg transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex flex-col items-center justify-center py-6 text-center gap-4">
+              <div className="w-16 h-16 rounded-full bg-rose-50 flex items-center justify-center text-rose-500 animate-pulse">
+                <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M23 7a2 2 0 0 0-2-2H3a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V7Z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              </div>
+              <div className="flex flex-col gap-1">
+                <h4 className="text-base font-extrabold text-slate-800">CCTV Belum Terpasang</h4>
+                <p className="text-xs text-slate-500 font-semibold max-w-xs">Perangkat kamera pemantau (CCTV) belum terpasang atau belum dikonfigurasikan di lokasi ini.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+  );
+};
+
+interface GedungRoomDetailSidebarProps {
+  isOpen: boolean;
+  onClose: () => void;
+  activeGedung: any;
+  setActiveGedung: (gedung: any) => void;
+  activeRoom: any;
+  setActiveRoom: (room: any) => void;
+  schoolDetail: any;
+  centerLat: number;
+  centerLng: number;
+}
+
+const GedungRoomDetailSidebar: React.FC<GedungRoomDetailSidebarProps> = ({
+  isOpen,
+  onClose,
+  activeGedung,
+  setActiveGedung,
+  activeRoom,
+  setActiveRoom,
+  schoolDetail,
+  centerLat,
+  centerLng,
+}) => {
+  if (!isOpen || !activeGedung) return null;
+
+  return (
+    <>
+      {/* Backdrop overlay */}
+      <div 
+        className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[190] cursor-pointer pointer-events-auto" 
+        onClick={onClose}
+      />
+
+      {/* Sidebar container */}
+      <div
+        className={`fixed inset-y-0 right-0 w-[90%] bg-[#F8FCFF]/98 backdrop-blur-md shadow-2xl z-[200] transform transition-transform duration-500 ease-in-out border-l border-slate-100 flex flex-col pointer-events-auto ${
+          isOpen ? "translate-x-0" : "translate-x-[110%]"
+        }`}
+      >
+        {/* Header */}
+        <div className="px-8 py-6 border-b border-slate-100 bg-white/80 backdrop-blur-md flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-[2rem] flex items-center justify-center text-white shadow-xl bg-blue-600 shadow-blue-200">
+              <SchoolIcon className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="text-lg font-black text-slate-800 leading-tight uppercase">
+                Detail Ruangan & Gedung: {activeRoom?.name}
+              </h3>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1.5">
+                Gedung: {activeGedung?.name} • Kelayakan Ruangan: {activeRoom?.status_kelayakan || "Layak"}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-3 bg-white hover:bg-rose-50 hover:text-rose-500 rounded-[2rem] border border-slate-100 shadow-lg transition-all cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* 2-Grid Content Area */}
+        <div className="flex-1 flex flex-col lg:flex-row min-h-0 animate-fadeIn">
+          {/* Grid Kiri: Peta Denah Sekolah */}
+          <div className="flex-1 h-[40vh] lg:h-full relative border-r border-slate-100 bg-slate-100">
+            <MapContainer
+              key={`sidebar-map-${centerLat}-${centerLng}`}
+              center={[centerLat, centerLng]}
+              zoom={20}
+              zoomControl={true}
+              scrollWheelZoom={false}
+              dragging={true}
+              className="w-full h-full"
+              style={{ width: "100%", height: "100%" }}
+            >
+              <TileLayer 
+                url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" 
+                maxZoom={20}
+                maxNativeZoom={20}
+              />
+              {schoolDetail?.polygon && Array.isArray(schoolDetail.polygon) && schoolDetail.polygon.length > 0 && (
+                <Polygon
+                  positions={schoolDetail.polygon}
+                  pathOptions={{
+                    color: "#2563eb",
+                    weight: 2,
+                    fillColor: "#bfdbfe",
+                    fillOpacity: 1.0,
+                  }}
+                />
+              )}
+              {schoolDetail?.gedung_detail?.map((g: any, index: number) => {
+                if (!g.polygon || !Array.isArray(g.polygon) || g.polygon.length === 0) return null;
+                const isActive = g.id === activeGedung?.id;
+                return (
+                  <Polygon
+                    key={`sidebar-building-${g.id || index}`}
+                    positions={g.polygon}
+                    pathOptions={{
+                      color: isActive ? "#1e40af" : "#3b82f6",
+                      weight: isActive ? 3 : 1.5,
+                      fillColor: isActive ? "#2563eb" : "#ffffff",
+                      fillOpacity: isActive ? 0.85 : 0.9,
+                    }}
+                    eventHandlers={{
+                      click: (e) => {
+                        L.DomEvent.stopPropagation(e);
+                        setActiveGedung(g);
+                        setActiveRoom(g.ruangan && g.ruangan.length > 0 ? g.ruangan[0] : null);
+                      }
+                    }}
+                  >
+                    <Tooltip
+                      permanent={true}
+                      direction="center"
+                      className="building-tooltip"
+                    >
+                      {g.name}
+                    </Tooltip>
+                  </Polygon>
+                );
+              })}
+            </MapContainer>
+          </div>
+
+          {/* Grid Kanan: Detail & Daftar Ruangan */}
+          <div className="flex-1 h-full overflow-y-auto p-8 space-y-6 flex flex-col bg-white">
+            {/* Keterangan Gedung */}
+            <div className="glass-card rounded-[2rem] p-6 border border-slate-100 bg-[#F8FCFF]/50 shadow-sm space-y-4">
+              <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
+                <span className="text-lg">🏢</span>
+                <h4 className="font-bold text-sm text-slate-700 uppercase tracking-wide">Informasi Gedung</h4>
+              </div>
+              <div className="grid grid-cols-2 gap-4 text-xs font-bold">
+                <div className="bg-white p-4 rounded-2xl border border-slate-100">
+                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Nama Gedung</span>
+                  <span className="text-slate-800 text-sm">{activeGedung?.name || "-"}</span>
+                </div>
+                <div className="bg-white p-4 rounded-2xl border border-slate-100">
+                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Tahun Pembangunan</span>
+                  <span className="text-slate-800 text-sm">{activeGedung?.tahun_pembangunan || "-"}</span>
+                </div>
+                <div className="bg-white p-4 rounded-2xl border border-slate-100">
+                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Status Kelayakan</span>
+                  <span className={`text-sm uppercase tracking-wide ${activeGedung?.status_kelayakan === 'Layak' ? 'text-emerald-600' : 'text-amber-600'}`}>
+                    {activeGedung?.status_kelayakan || "Layak"}
+                  </span>
+                </div>
+                <div className="bg-white p-4 rounded-2xl border border-slate-100">
+                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Total Ruangan</span>
+                  <span className="text-slate-800 text-sm">{activeGedung?.total_ruangan || 0} Ruangan</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Ruangan Aktif Detail */}
+            <div className="glass-card rounded-[2rem] p-6 border border-slate-100 bg-[#F8FCFF]/50 shadow-sm space-y-4">
+              <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
+                <span className="text-lg">🔑</span>
+                <h4 className="font-bold text-sm text-slate-700 uppercase tracking-wide">Detail Ruangan</h4>
+              </div>
+              <div className="grid grid-cols-2 gap-4 text-xs font-bold">
+                <div className="bg-white p-4 rounded-2xl border border-slate-100 col-span-2">
+                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Nama Ruangan</span>
+                  <span className="text-slate-800 text-sm">{activeRoom?.name || "-"}</span>
+                </div>
+                <div className="bg-white p-4 rounded-2xl border border-slate-100">
+                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Fungsi / Deskripsi</span>
+                  <span className="text-slate-700 text-xs font-semibold leading-relaxed block mt-0.5">{activeRoom?.deskripsi || "Digunakan untuk kegiatan belajar mengajar."}</span>
+                </div>
+                <div className="bg-white p-4 rounded-2xl border border-slate-100">
+                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Kelayakan Ruangan</span>
+                  <span className={`text-xs uppercase tracking-wider font-black ${activeRoom?.status_kelayakan === 'Layak' ? 'text-emerald-600' : 'text-amber-600'}`}>
+                    {activeRoom?.status_kelayakan || "-"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Daftar Semua Ruangan di Gedung Ini */}
+            <div className="flex-1 flex flex-col space-y-4">
+              <div className="flex items-center gap-3 border-b border-slate-100 pb-2">
+                <span className="text-lg">📋</span>
+                <h4 className="font-bold text-sm text-slate-700 uppercase tracking-wide">Daftar Ruangan di Gedung</h4>
+              </div>
+              <div className="flex-1 overflow-y-auto max-h-[220px] pr-2 space-y-2 scrollbar-thin">
+                {activeGedung?.ruangan?.map((r: any) => {
+                  const isSelected = r.id === activeRoom?.id;
+                  return (
+                    <button
+                      key={r.id}
+                      onClick={() => setActiveRoom(r)}
+                      className={`w-full flex items-center justify-between p-3.5 rounded-xl border text-xs transition-all cursor-pointer text-left ${
+                        isSelected
+                          ? "bg-blue-600 text-white border-blue-700 font-bold shadow-lg"
+                          : "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-100 hover:border-slate-200"
+                      }`}
+                    >
+                      <div className="flex flex-col items-start gap-0.5">
+                        <span className={isSelected ? "text-white font-bold" : "text-slate-800 font-bold"}>{r.name}</span>
+                        <span className={`text-[9px] ${isSelected ? "text-blue-100" : "text-slate-400"}`}>
+                          Fungsi: {r.deskripsi || "Kelas"}
+                        </span>
+                      </div>
+                      <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase ${
+                        isSelected
+                          ? "bg-white/20 text-white"
+                          : (r.status_kelayakan === 'Layak' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600')
+                      }`}>
+                        {r.status_kelayakan}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
   );
 };

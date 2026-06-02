@@ -359,7 +359,7 @@ export const CabangDinas = ({ slug: propSlug }: { slug?: string }) => {
                                 setSelectedSchoolForDetail(school);
                                 setIsSchoolDetailOpen(true);
                               }}
-                              className="hidden bg-slate-50/80 hover:bg-slate-100 text-slate-600 text-[10px] font-black uppercase tracking-wider py-2.5 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm border border-slate-100"
+                              className="bg-slate-50/80 hover:bg-slate-100 text-slate-600 text-[10px] font-black uppercase tracking-wider py-2.5 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm border border-slate-100"
                             >
                               <Eye className="w-3.5 h-3.5" />
                               <span>Klik Detail</span>
@@ -372,10 +372,10 @@ export const CabangDinas = ({ slug: propSlug }: { slug?: string }) => {
                   {data?.schools?.filter((s: any) =>
                     s.name?.toLowerCase().includes(schoolSearch.toLowerCase())
                   ).length === 0 && (
-                    <div className="py-10 text-center text-xs font-bold text-slate-400 uppercase tracking-widest">
-                      Tidak ada sekolah ditemukan
-                    </div>
-                  )}
+                      <div className="py-10 text-center text-xs font-bold text-slate-400 uppercase tracking-widest">
+                        Tidak ada sekolah ditemukan
+                      </div>
+                    )}
                 </div>
 
               </div>

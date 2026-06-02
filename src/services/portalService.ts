@@ -65,6 +65,11 @@ export const PortalService = {
     return response.data;
   },
 
+  getSchoolDetail: async (id: string) => {
+    const response = await axios.get(`${API_REKAP_URL}/v1/portal/school-detail/${id}`);
+    return response.data;
+  },
+
   downloadNeracaPdf: async (params?: any) => {
     const response = await axios.get(`${API_REKAP_URL}/v1/portal/neraca-pdf`, {
       params,

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+
 import { X, School, User, Phone, MapPin, Info, Copy, Check, Layers, Award, Users, TrendingUp, Calendar, GraduationCap, UserCheck } from "lucide-react";
 
 interface SchoolDetailSidebarProps {
@@ -136,7 +136,6 @@ export const SchoolDetailSidebar: React.FC<SchoolDetailSidebarProps> = ({
   onClose,
   school,
 }) => {
-  const navigate = useNavigate();
   const [copiedCoords, setCopiedCoords] = useState(false);
   const [copiedNip, setCopiedNip] = useState(false);
 
@@ -205,7 +204,11 @@ export const SchoolDetailSidebar: React.FC<SchoolDetailSidebarProps> = ({
             <button
               onClick={() => {
                 onClose();
-                navigate(`/sekolah/${school.id || "1"}?name=${encodeURIComponent(school.name)}`);
+  const url = `/sekolah2/${school.id || "1"}?name=${encodeURIComponent(
+    school.name
+  )}`;
+
+  window.open(url, "_blank");
               }}
               className="mt-3.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-[10px] font-black uppercase tracking-wider transition-all shadow-md shadow-blue-500/10 cursor-pointer flex items-center justify-center gap-1.5"
             >
