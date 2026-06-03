@@ -216,7 +216,7 @@ export const SchoolLandingSekolahku = ({ slug: propSlug }: { slug?: string }) =>
     calculatedCenter = [latSum / schoolDetail.polygon.length, lngSum / schoolDetail.polygon.length];
   }
 
-  const centerLat = (calculatedCenter ? calculatedCenter[0] : (activeSchool?.latitude ? parseFloat(activeSchool.latitude) : -0.8917)) - 0.0006;
+  const centerLat = (calculatedCenter ? calculatedCenter[0] : (activeSchool?.latitude ? parseFloat(activeSchool.latitude) : -0.8917)) - 0.0001;
   const centerLng = calculatedCenter ? calculatedCenter[1] : (activeSchool?.longitude ? parseFloat(activeSchool.longitude) : 119.8707);
 
 
@@ -262,6 +262,7 @@ export const SchoolLandingSekolahku = ({ slug: propSlug }: { slug?: string }) =>
         month: localMonth,
         range: localRange,
         include_details: includeDetails ? "1" : "0",
+        school_id: isSchoolMode ? schoolId : undefined,
       });
       setData(res);
     } catch (error) {
