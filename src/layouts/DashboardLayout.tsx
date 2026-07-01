@@ -12,6 +12,7 @@ import { CategoryProjectionSidebar } from "@/components/Fragments/CategoryProjec
 import { SchoolReportSidebar } from "@/components/Fragments/SchoolReportSidebar";
 import { JatuhTempoSidebar } from "@/components/Fragments/JatuhTempoSidebar";
 import { RegionProjectionSidebar } from "@/components/Fragments/RegionProjectionSidebar";
+import { BantuanSidebar } from "@/components/Fragments/BantuanSidebar";
 
 interface DashboardLayoutProps {
   landingData?: GtkLandingData;
@@ -50,8 +51,8 @@ export const DashboardLayout = ({
   const [isServiceDetailOpen, setIsServiceDetailOpen] = useState(false);
   const [isDrilldownOpen, setIsDrilldownOpen] = useState(false);
   const [isNeracaOpen, setIsNeracaOpen] = useState(false);
-  const [isNeracaRekapOpen, setIsNeracaRekapOpen] = useState(false);
   const [isSchoolReportsOpen, setIsSchoolReportsOpen] = useState(false);
+  const [isBantuanOpen, setIsBantuanOpen] = useState(false);
 
   // Projection Sidebars State
   const [selectedCabdisForSummary, setSelectedCabdisForSummary] =
@@ -195,12 +196,12 @@ export const DashboardLayout = ({
         isOpen={isNeracaOpen}
         onClose={() => setIsNeracaOpen(false)}
         initialNeracaData={portalData?.neraca}
+        initialNeracaRekapData={portalData?.neracaRekap}
       />
 
-      <NeracaSidebar
-        isOpen={isNeracaRekapOpen}
-        onClose={() => setIsNeracaRekapOpen(false)}
-        initialNeracaData={portalData?.neracaRekap}
+      <BantuanSidebar
+        isOpen={isBantuanOpen}
+        onClose={() => setIsBantuanOpen(false)}
       />
 
       {/* 2. Main content fix: Tambahkan 'z-10' agar semua komponen di dalamnya ditarik ke atas background */}
@@ -209,7 +210,7 @@ export const DashboardLayout = ({
           portalData={portalData}
           onViewRegionDetail={handleOpenRegionDetail}
           onOpenNeraca={() => setIsNeracaOpen(true)}
-          onOpenNeracaRekap={() => setIsNeracaRekapOpen(true)}
+          onOpenBantuan={() => setIsBantuanOpen(true)}
           onProyeksiFilterChange={onProyeksiFilterChange}
           onOpenProyeksiDetail={handleOpenCategoryDetail}
           onOpenJatuhTempoDetail={handleOpenJatuhTempoDetail}

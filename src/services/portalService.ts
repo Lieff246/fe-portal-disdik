@@ -98,6 +98,11 @@ export const PortalService = {
     return mapNeracaData(response.data);
   },
 
+  getSinkronisasiDapodik: async (params?: any) => {
+    const response = await axios.get(`${API_REKAP_URL}/v1/portal/sinkronisasi-dapodik`, { params });
+    return response.data;
+  },
+
   getAboutInfo: async () => {
     return [
       {

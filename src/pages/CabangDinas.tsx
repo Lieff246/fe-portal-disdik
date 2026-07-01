@@ -13,6 +13,7 @@ import { CategoryProjectionSidebar } from "@/components/Fragments/CategoryProjec
 import { JatuhTempoSidebar } from "@/components/Fragments/JatuhTempoSidebar";
 import { NeracaSidebar } from "@/components/Fragments/NeracaSidebar";
 import { SchoolReportSidebar } from "@/components/Fragments/SchoolReportSidebar";
+import { BantuanSidebar } from "@/components/Fragments/BantuanSidebar";
 
 import { Skeleton } from "@/components/Elements/Skeleton/Skeleton";
 
@@ -66,8 +67,8 @@ export const CabangDinas = ({ slug: propSlug }: { slug?: string }) => {
   const [activeCategoryDetail, setActiveCategoryDetail] = useState<string | null>(null);
   const [activeJatuhTempoDetail, setActiveJatuhTempoDetail] = useState<string | null>(null);
   const [isNeracaOpen, setIsNeracaOpen] = useState(false);
-  const [isNeracaRekapOpen, setIsNeracaRekapOpen] = useState(false);
   const [isSchoolReportsOpen, setIsSchoolReportsOpen] = useState(false);
+  const [isBantuanOpen, setIsBantuanOpen] = useState(false);
 
   // 1. Fetch detailed data when slug or projection filters change
   useEffect(() => {
@@ -180,12 +181,13 @@ export const CabangDinas = ({ slug: propSlug }: { slug?: string }) => {
         isOpen={isNeracaOpen}
         onClose={() => setIsNeracaOpen(false)}
         initialNeracaData={portalData?.neraca}
+        initialNeracaRekapData={portalData?.neracaRekap}
+        defaultFilters={{ kabupaten_kota: regionName, cabdis_slug: slug }}
       />
 
-      <NeracaSidebar
-        isOpen={isNeracaRekapOpen}
-        onClose={() => setIsNeracaRekapOpen(false)}
-        initialNeracaData={portalData?.neracaRekap}
+      <BantuanSidebar
+        isOpen={isBantuanOpen}
+        onClose={() => setIsBantuanOpen(false)}
       />
 
       <SchoolReportSidebar
@@ -384,37 +386,11 @@ export const CabangDinas = ({ slug: propSlug }: { slug?: string }) => {
           </div>
 
           {/* Bottom Area */}
-          <div className="w-full flex flex-col lg:flex-row justify-between items-start mt-10 gap-6 pointer-events-none">
-
-            {/* Neraca Buttons */}
+          <div className="w-full flex flex-col lg:flex-row justify-between items-start mt-10 gap-6 pointer-events-none">            {/* Neraca Buttons */}
             <div className="flex gap-4 shrink-0 pointer-events-auto">
               <div
-                className="w-64 p-6 rounded-[2.5rem] bg-gradient-to-b from-[#2588EB] to-[#5EAFFF] text-white flex flex-col gap-4 cursor-pointer hover:scale-105 transition-transform shadow-xl shadow-blue-500/20"
+                className="w-64 p-6 rounded-[2.5rem] bg-gradient-to-br from-[#2588EB] via-[#3b82f6] to-[#10B981] text-white flex flex-col gap-4 cursor-pointer hover:scale-105 transition-transform shadow-xl shadow-blue-500/20"
                 onClick={() => setIsNeracaOpen(true)}
-              >
-                <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                </div>
-                <div>
-                  <div className="font-bold text-sm">Neraca Dapodik</div>
-                  <p className="text-xs text-white/80 font-medium leading-relaxed">Data Pusat Dapodik GTK</p>
-                </div>
-                <button
-                  className="w-full py-3 bg-blue-700/50 rounded-2xl text-xs font-semibold border border-white/10 hover:bg-blue-500 transition-colors mt-auto cursor-pointer"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsNeracaOpen(true);
-                  }}
-                >
-                  Lihat Data
-                </button>
-              </div>
-
-              <div
-                className="w-64 p-6 rounded-[2.5rem] bg-gradient-to-b from-[#10B981] to-[#34D399] text-white flex flex-col gap-4 cursor-pointer hover:scale-105 transition-transform shadow-xl shadow-emerald-500/20"
-                onClick={() => setIsNeracaRekapOpen(true)}
               >
                 <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -422,17 +398,51 @@ export const CabangDinas = ({ slug: propSlug }: { slug?: string }) => {
                   </svg>
                 </div>
                 <div>
-                  <div className="font-bold text-sm">Neraca Rekapan</div>
-                  <p className="text-xs text-white/80 font-medium leading-relaxed">Data Kepegawaian Daerah</p>
+                  <div className="font-bold text-sm">Neraca Pendidikan</div>
+                  <p className="text-xs text-white/80 font-medium leading-relaxed">Data Dapodik GTK & Kepegawaian Daerah</p>
                 </div>
                 <button
-                  className="w-full py-3 bg-emerald-700/50 rounded-2xl text-xs font-semibold border border-white/10 hover:bg-emerald-500 transition-colors mt-auto cursor-pointer"
+                  className="w-full py-3 bg-blue-700/30 rounded-2xl text-xs font-semibold border border-white/10 hover:bg-white/20 transition-colors mt-auto cursor-pointer"
                   onClick={(e) => {
                     e.stopPropagation();
-                    setIsNeracaRekapOpen(true);
+                    setIsNeracaOpen(true);
                   }}
                 >
-                  Lihat Data
+                  Lihat Neraca
+                </button>
+              </div>
+
+              <div
+                className="w-64 p-6 rounded-[2.5rem] bg-gradient-to-b from-[#8B5CF6] to-[#A78BFA] text-white flex flex-col gap-4 cursor-pointer hover:scale-105 transition-transform shadow-xl shadow-violet-500/20"
+                onClick={() => setIsBantuanOpen(true)}
+              >
+                <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <div className="font-bold text-sm">Customer Center / Bantuan</div>
+                  <p className="text-xs text-white/80 font-medium leading-relaxed">Layanan Bantuan & SOP Pulpen</p>
+                </div>
+                <button
+                  className="w-full py-3 bg-violet-700/50 rounded-2xl text-xs font-semibold border border-white/10 hover:bg-violet-50 transition-colors mt-auto cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsBantuanOpen(true);
+                  }}
+                >
+                  Lihat Bantuan
                 </button>
               </div>
             </div>

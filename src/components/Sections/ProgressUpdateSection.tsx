@@ -38,7 +38,7 @@ export const ProgressUpdateSection: React.FC<Props> = ({
     <section className="w-full pb-8">
       <div
         onClick={onClick}
-        className="glass ring-2 !ring-white rounded-[2rem] p-10 flex flex-col gap-4 relative z-10 cursor-pointer group hover:shadow-2xl hover:shadow-blue-500/10 transition-all border border-transparent hover:border-blue-100"
+        className="glass ring-2 !ring-white rounded-[1.5rem] p-6 flex flex-col gap-4 relative z-10 cursor-pointer group hover:shadow-2xl hover:shadow-blue-500/10 transition-all border border-transparent hover:border-blue-100"
       >
         <div className="flex items-center justify-between">
           <div>
@@ -55,7 +55,7 @@ export const ProgressUpdateSection: React.FC<Props> = ({
           </div>
         </div>
 
-        <div className="w-full h-5 bg-slate-200/50  overflow-hidden flex">
+        <div className="w-full mb-2 h-5 bg-slate-200/50  overflow-hidden flex">
           <div
             className="h-full bg-emerald-500 transition-all duration-1000"
             style={{ width: `${percentage}%` }}
@@ -67,7 +67,7 @@ export const ProgressUpdateSection: React.FC<Props> = ({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="glass-card rounded-[2.5rem] p-8 flex flex-col gap-2">
+          <div className="glass-card rounded-[2rem] p-6 flex flex-col gap-2">
             <div className="flex items-center gap-3">
               <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
               <span className="text-sm font-bold text-slate-700">
@@ -82,7 +82,7 @@ export const ProgressUpdateSection: React.FC<Props> = ({
             </div>
           </div>
 
-          <div className="glass-card rounded-[2.5rem] p-8 flex flex-col gap-2">
+          <div className="glass-card rounded-[2rem] p-6 flex flex-col gap-2">
             <div className="flex items-center gap-3">
               <div className="w-3 h-3 rounded-full bg-amber-500"></div>
               <span className="text-sm font-bold text-slate-700">

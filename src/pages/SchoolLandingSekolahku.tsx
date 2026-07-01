@@ -12,6 +12,7 @@ import { CategoryProjectionSidebar } from "@/components/Fragments/CategoryProjec
 import { JatuhTempoSidebar } from "@/components/Fragments/JatuhTempoSidebar";
 import { NeracaSidebar } from "@/components/Fragments/NeracaSidebar";
 import { SchoolReportSidebar } from "@/components/Fragments/SchoolReportSidebar";
+import { BantuanSidebar } from "@/components/Fragments/BantuanSidebar";
 
 import { Skeleton } from "@/components/Elements/Skeleton/Skeleton";
 
@@ -94,14 +95,14 @@ export const SchoolLandingSekolahku = ({ slug: propSlug }: { slug?: string }) =>
   const [activeCategoryDetail, setActiveCategoryDetail] = useState<string | null>(null);
   const [activeJatuhTempoDetail, setActiveJatuhTempoDetail] = useState<string | null>(null);
   const [isNeracaOpen, setIsNeracaOpen] = useState(false);
-  const [isNeracaRekapOpen, setIsNeracaRekapOpen] = useState(false);
   const [isSchoolReportsOpen, setIsSchoolReportsOpen] = useState(false);
+  const [isBantuanOpen, setIsBantuanOpen] = useState(false);
 
   const getPhotos = () => {
     if (!activeGedung?.dokumentasi) {
       return [];
     }
-    
+
     let list: any[] = [];
     if (Array.isArray(activeGedung.dokumentasi)) {
       list = activeGedung.dokumentasi;
@@ -117,7 +118,7 @@ export const SchoolLandingSekolahku = ({ slug: propSlug }: { slug?: string }) =>
         list = [activeGedung.dokumentasi];
       }
     }
-    
+
     const urls = list.map((item: any) => {
       if (typeof item === 'string') return item;
       if (item && typeof item === 'object') {
@@ -235,8 +236,8 @@ export const SchoolLandingSekolahku = ({ slug: propSlug }: { slug?: string }) =>
     total_sekolah: 1,
     total_rombel: schoolD.rombelCount,
     total_siswa: schoolD.studentCount,
-    total_guru: schoolD.pnsCount,
-    total_tendik: schoolD.nonPnsCount,
+    total_guru: schoolD.totalTeachers,
+    total_tendik: schoolD.totalTendik || schoolD.nonPnsCount,
     total_pegawai: 0,
   } : null;
 
@@ -360,19 +361,20 @@ export const SchoolLandingSekolahku = ({ slug: propSlug }: { slug?: string }) =>
         isOpen={isNeracaOpen}
         onClose={() => setIsNeracaOpen(false)}
         initialNeracaData={portalData?.neraca}
+        initialNeracaRekapData={portalData?.neracaRekap}
+        defaultFilters={{ npsn: schoolDetail?.npsn, school_id: schoolId }}
       />
 
-      <NeracaSidebar
-        isOpen={isNeracaRekapOpen}
-        onClose={() => setIsNeracaRekapOpen(false)}
-        initialNeracaData={portalData?.neracaRekap}
+      <BantuanSidebar
+        isOpen={isBantuanOpen}
+        onClose={() => setIsBantuanOpen(false)}
       />
 
       <SchoolReportSidebar
         isOpen={isSchoolReportsOpen}
         onClose={() => setIsSchoolReportsOpen(false)}
         currentMonth={localMonth}
-        cabdisSlug={derivedCabdisSlug || slug}  
+        cabdisSlug={derivedCabdisSlug || slug}
       />
 
       <SchoolDetailSidebar
@@ -397,7 +399,7 @@ export const SchoolLandingSekolahku = ({ slug: propSlug }: { slug?: string }) =>
       <main className="w-full bg-transparent min-h-screen relative z-10 overflow-x-hidden flex flex-col items-center justify-start">
 
         {/* Floating Glassmorphic Header Bar */}
-        <div className="absolute top-6 left-10 right-10 z-50 bg-white/90 backdrop-blur-md border border-white/60 shadow-xl rounded-full px-4 md:px-6 py-2.5 md:py-3 flex items-center justify-between pointer-events-auto">
+        <div className="glass absolute top-6 left-10 right-10 z-50 rounded-full px-4 md:px-6 py-2.5 md:py-3 flex items-center justify-between pointer-events-auto">
           {/* Left side: Back Button + Sulawesi Tengah Logo + School Name */}
           <div className="flex items-center gap-2 md:gap-3 min-w-0">
             <button
@@ -407,15 +409,16 @@ export const SchoolLandingSekolahku = ({ slug: propSlug }: { slug?: string }) =>
             >
               <ChevronLeft className="w-4 h-4 md:w-5 md:h-5" />
             </button>
-            <h1 className="text-xs md:text-sm font-black text-slate-800 uppercase tracking-wider truncate">
+            <h1 className="font-bold text-slate-800 uppercase truncate">
               {isSchoolMode ? schoolName : regionName}
             </h1>
           </div>
 
           {/* Center: Portal Logo */}
           <div className="flex items-center justify-center shrink-0 mx-2">
-            <img src="/logo.png" className="h-7 md:h-9 object-contain" alt="Portal Logo" />
+            <img src="/logo.png" className="h-11 object-contain" alt="Portal Logo" />
           </div>
+
 
           {/* Right side: Map Action Buttons */}
           <div className="flex items-center gap-2 shrink-0 pointer-events-auto">
@@ -487,8 +490,8 @@ export const SchoolLandingSekolahku = ({ slug: propSlug }: { slug?: string }) =>
                 className="school-leaflet-tiles w-full h-full"
                 style={{ width: "100%", height: "100%" }}
               >
-                <TileLayer 
-                  url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" 
+                <TileLayer
+                  url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
                   maxZoom={20}
                   maxNativeZoom={20}
                 />
@@ -546,8 +549,8 @@ export const SchoolLandingSekolahku = ({ slug: propSlug }: { slug?: string }) =>
                           {g.name}
                         </Tooltip>
                       </Polygon>
-                      <Marker 
-                        position={centerCoord} 
+                      <Marker
+                        position={centerCoord}
                         icon={buildingCenterMarkerIcon}
                         eventHandlers={{
                           click: (e) => {
@@ -611,17 +614,17 @@ export const SchoolLandingSekolahku = ({ slug: propSlug }: { slug?: string }) =>
 
             {/* Right side: School List / School Information Card */}
             <div className="flex-[1] relative min-h-[400px] lg:min-h-0 pointer-events-none">
-              <div className="lg:absolute lg:inset-0 flex flex-col gap-6 pointer-events-auto">
+              <div className="lg:absolute lg:inset-0 flex flex-col gap-4 pointer-events-auto">
                 {isSchoolMode ? (
                   /* --- MODE SEKOLAH: INFORMASI UMUM SEKOLAH --- */
                   <div className="w-full flex-1 overflow-y-auto pr-1 scrollbar-hide flex flex-col gap-6">
-                    <div className="bg-white rounded-[2.5rem] p-6 md:p-8 flex flex-col gap-6 border border-slate-100 shadow-xl">
-                      
+                    <div className="glass rounded-3xl p-6 md:p-8 flex flex-col gap-6 border border-slate-100">
+
                       {/* Nested Building/Room Detail Card (if clicked) */}
                       {activeGedung && (
-                        <div className="bg-[#f8fafc] rounded-[1.8rem] p-5 md:p-6 flex flex-col gap-4 relative border border-slate-200/50">
+                        <div className="glass rounded-3xl p-5 md:p-6 flex flex-col gap-4 relative">
                           {/* Close Button */}
-                          <button 
+                          <button
                             onClick={() => {
                               setActiveGedung(null);
                               setActiveRoom(null);
@@ -634,7 +637,7 @@ export const SchoolLandingSekolahku = ({ slug: propSlug }: { slug?: string }) =>
 
                           {/* Building/Room Title & Description */}
                           <div className="flex flex-col gap-1 pr-6">
-                            <h3 className="text-lg font-black text-slate-800 tracking-tight leading-snug">
+                            <h3 className="text-lg font-bold text-slate-800 tracking-tight leading-snug">
                               {activeRoom?.name || activeGedung?.name}
                             </h3>
                             <p className="text-xs text-slate-500 font-semibold leading-relaxed">
@@ -645,7 +648,7 @@ export const SchoolLandingSekolahku = ({ slug: propSlug }: { slug?: string }) =>
                           {/* Action Buttons */}
                           <div className="flex gap-2.5">
                             {/* Lihat Foto Button */}
-                            <button 
+                            <button
                               onClick={() => {
                                 setIsPhotoModalOpen(true);
                                 setActivePhotoIndex(0);
@@ -659,7 +662,7 @@ export const SchoolLandingSekolahku = ({ slug: propSlug }: { slug?: string }) =>
                             </button>
 
                             {/* Live CCTV Button */}
-                            <button 
+                            <button
                               onClick={() => setIsCctvModalOpen(true)}
                               className="flex-1 bg-[#eff6ff] hover:bg-[#dbeafe] text-blue-700 border border-blue-100 rounded-xl py-2.5 px-3.5 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer hover:scale-[1.02]"
                             >
@@ -673,11 +676,15 @@ export const SchoolLandingSekolahku = ({ slug: propSlug }: { slug?: string }) =>
 
                           {/* Detail Informasi */}
                           <div className="flex flex-col gap-2.5 mt-2 border-t border-slate-200/60 pt-4">
-                            <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider">Detail Informasi</h4>
+                            <h4 className="text-sm font-bold text-slate-800">Detail Informasi</h4>
                             <div className="flex flex-col gap-1">
                               {activeGedung?.ruangan?.map((r: any) => (
                                 <div key={r.id} className="flex justify-between items-center py-2 border-b border-slate-100 text-xs font-bold">
-                                  <span className="text-slate-400 font-semibold">Kondisi Infrastruktur {r.name}</span>
+                                  <span className="text-slate-400 font-semibold">
+                                    <div>Kondisi Infrastruktur</div>
+                                    <div>
+                                      {r.name}</div>
+                                  </span>
                                   <span className="text-slate-800 font-extrabold">{r.status_kelayakan || "Layak"}</span>
                                 </div>
                               ))}
@@ -692,13 +699,13 @@ export const SchoolLandingSekolahku = ({ slug: propSlug }: { slug?: string }) =>
 
                       {/* Informasi Sekolah Section */}
                       <div className="flex flex-col gap-4">
-                        <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider">Informasi Sekolah</h3>
+                        <h3 className="font-bold text-slate-800">Informasi Sekolah</h3>
                         <div className="flex flex-col gap-1 text-xs font-bold text-slate-800">
                           <div className="flex justify-between items-center py-2.5 border-b border-slate-100">
                             <span className="text-slate-400 font-semibold">Nama Sekolah</span>
                             <span className="text-slate-800 font-extrabold text-right ml-4">{schoolName}</span>
                           </div>
-                          
+
                           <div className="flex justify-between items-center py-2.5 border-b border-slate-100">
                             <span className="text-slate-400 font-semibold">Akreditasi</span>
                             <span className="text-slate-800 font-extrabold">{schoolD?.accreditation || "A"}</span>
@@ -796,11 +803,10 @@ export const SchoolLandingSekolahku = ({ slug: propSlug }: { slug?: string }) =>
                           return (
                             <div
                               key={school.id}
-                              className={`glass-card rounded-[1.8rem] p-5 flex flex-col gap-4 border shadow-lg hover:scale-[1.02] transition-transform duration-300 ${
-                                isActive
-                                  ? "border-blue-500 ring-2 ring-blue-500/20 bg-blue-50/10"
-                                  : "border-white/60 hover:border-blue-400/80"
-                              }`}
+                              className={`glass-card rounded-[1.8rem] p-5 flex flex-col gap-4 border shadow-lg hover:scale-[1.02] transition-transform duration-300 ${isActive
+                                ? "border-blue-500 ring-2 ring-blue-500/20 bg-blue-50/10"
+                                : "border-white/60 hover:border-blue-400/80"
+                                }`}
                             >
                               {/* Upper Section */}
                               <div className="flex items-center justify-between">
@@ -827,11 +833,10 @@ export const SchoolLandingSekolahku = ({ slug: propSlug }: { slug?: string }) =>
                                     if (isActive) return;
                                     navigate(`/sekolah2/${school.id}?name=${encodeURIComponent(school.name)}`);
                                   }}
-                                  className={`${
-                                    isActive
-                                      ? "bg-blue-600 text-white"
-                                      : "bg-blue-50/80 hover:bg-blue-100 text-blue-600"
-                                  } text-[10px] font-black uppercase tracking-wider py-2.5 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm border border-blue-100/35`}
+                                  className={`${isActive
+                                    ? "bg-blue-600 text-white"
+                                    : "bg-blue-50/80 hover:bg-blue-100 text-blue-600"
+                                    } text-[10px] font-black uppercase tracking-wider py-2.5 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm border border-blue-100/35`}
                                 >
                                   <MapPin className="w-3.5 h-3.5" />
                                   <span>{isActive ? "Sekolah Aktif" : "Cari Koordinat"}</span>
@@ -874,32 +879,8 @@ export const SchoolLandingSekolahku = ({ slug: propSlug }: { slug?: string }) =>
             {/* Neraca Buttons */}
             <div className="flex gap-4 shrink-0 pointer-events-auto">
               <div
-                className="w-64 p-6 rounded-[2.5rem] bg-gradient-to-b from-[#2588EB] to-[#5EAFFF] text-white flex flex-col gap-4 cursor-pointer hover:scale-105 transition-transform shadow-xl shadow-blue-500/20"
+                className="w-64 p-6 rounded-[2.5rem] bg-gradient-to-br from-[#2588EB] via-[#3b82f6] to-[#10B981] text-white flex flex-col gap-4 cursor-pointer hover:scale-105 transition-transform shadow-xl shadow-blue-500/20"
                 onClick={() => setIsNeracaOpen(true)}
-              >
-                <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                </div>
-                <div>
-                  <div className="font-bold text-sm">Neraca Dapodik</div>
-                  <p className="text-xs text-white/80 font-medium leading-relaxed">Data Pusat Dapodik GTK</p>
-                </div>
-                <button
-                  className="w-full py-3 bg-blue-700/50 rounded-2xl text-xs font-semibold border border-white/10 hover:bg-blue-500 transition-colors mt-auto cursor-pointer"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsNeracaOpen(true);
-                  }}
-                >
-                  Lihat Data
-                </button>
-              </div>
-
-              <div
-                className="w-64 p-6 rounded-[2.5rem] bg-gradient-to-b from-[#10B981] to-[#34D399] text-white flex flex-col gap-4 cursor-pointer hover:scale-105 transition-transform shadow-xl shadow-emerald-500/20"
-                onClick={() => setIsNeracaRekapOpen(true)}
               >
                 <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -907,17 +888,51 @@ export const SchoolLandingSekolahku = ({ slug: propSlug }: { slug?: string }) =>
                   </svg>
                 </div>
                 <div>
-                  <div className="font-bold text-sm">Neraca Rekapan</div>
-                  <p className="text-xs text-white/80 font-medium leading-relaxed">Data Kepegawaian Daerah</p>
+                  <div className="font-bold text-sm">Neraca Pendidikan</div>
+                  <p className="text-xs text-white/80 font-medium leading-relaxed">Data Dapodik GTK & Kepegawaian Daerah</p>
                 </div>
                 <button
-                  className="w-full py-3 bg-emerald-700/50 rounded-2xl text-xs font-semibold border border-white/10 hover:bg-emerald-500 transition-colors mt-auto cursor-pointer"
+                  className="w-full py-3 bg-blue-700/30 rounded-2xl text-xs font-semibold border border-white/10 hover:bg-white/20 transition-colors mt-auto cursor-pointer"
                   onClick={(e) => {
                     e.stopPropagation();
-                    setIsNeracaRekapOpen(true);
+                    setIsNeracaOpen(true);
                   }}
                 >
-                  Lihat Data
+                  Lihat Neraca
+                </button>
+              </div>
+
+              <div
+                className="w-64 p-6 rounded-[2.5rem] bg-gradient-to-b from-[#8B5CF6] to-[#A78BFA] text-white flex flex-col gap-4 cursor-pointer hover:scale-105 transition-transform shadow-xl shadow-violet-500/20"
+                onClick={() => setIsBantuanOpen(true)}
+              >
+                <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <div className="font-bold text-sm">Customer Center / Bantuan</div>
+                  <p className="text-xs text-white/80 font-medium leading-relaxed">Layanan Bantuan & SOP Pulpen</p>
+                </div>
+                <button
+                  className="w-full py-3 bg-violet-700/50 rounded-2xl text-xs font-semibold border border-white/10 hover:bg-violet-50 transition-colors mt-auto cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsBantuanOpen(true);
+                  }}
+                >
+                  Lihat Bantuan
                 </button>
               </div>
             </div>
@@ -1021,11 +1036,10 @@ export const SchoolLandingSekolahku = ({ slug: propSlug }: { slug?: string }) =>
                         onClick={() => setActivePhotoIndex(index)}
                         className="flex flex-col items-center gap-2 group focus:outline-none cursor-pointer"
                       >
-                        <div className={`w-28 h-16 rounded-2xl overflow-hidden transition-all duration-300 ${
-                          isActive
-                            ? "border-2 border-blue-500 scale-105 shadow-md"
-                            : "grayscale opacity-50 hover:grayscale-0 hover:opacity-100"
-                        }`}>
+                        <div className={`w-28 h-16 rounded-2xl overflow-hidden transition-all duration-300 ${isActive
+                          ? "border-2 border-blue-500 scale-105 shadow-md"
+                          : "grayscale opacity-50 hover:grayscale-0 hover:opacity-100"
+                          }`}>
                           <img
                             src={photo}
                             alt={`Thumbnail ${index + 1}`}
@@ -1107,16 +1121,15 @@ const GedungRoomDetailSidebar: React.FC<GedungRoomDetailSidebarProps> = ({
   return (
     <>
       {/* Backdrop overlay */}
-      <div 
-        className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[190] cursor-pointer pointer-events-auto" 
+      <div
+        className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[190] cursor-pointer pointer-events-auto"
         onClick={onClose}
       />
 
       {/* Sidebar container */}
       <div
-        className={`fixed inset-y-0 right-0 w-[90%] bg-[#F8FCFF]/98 backdrop-blur-md shadow-2xl z-[200] transform transition-transform duration-500 ease-in-out border-l border-slate-100 flex flex-col pointer-events-auto ${
-          isOpen ? "translate-x-0" : "translate-x-[110%]"
-        }`}
+        className={`fixed inset-y-0 right-0 w-[90%] bg-[#F8FCFF]/98 backdrop-blur-md shadow-2xl z-[200] transform transition-transform duration-500 ease-in-out border-l border-slate-100 flex flex-col pointer-events-auto ${isOpen ? "translate-x-0" : "translate-x-[110%]"
+          }`}
       >
         {/* Header */}
         <div className="px-8 py-6 border-b border-slate-100 bg-white/80 backdrop-blur-md flex items-center justify-between shrink-0">
@@ -1155,8 +1168,8 @@ const GedungRoomDetailSidebar: React.FC<GedungRoomDetailSidebarProps> = ({
               className="w-full h-full"
               style={{ width: "100%", height: "100%" }}
             >
-              <TileLayer 
-                url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" 
+              <TileLayer
+                url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
                 maxZoom={20}
                 maxNativeZoom={20}
               />
@@ -1272,11 +1285,10 @@ const GedungRoomDetailSidebar: React.FC<GedungRoomDetailSidebarProps> = ({
                     <button
                       key={r.id}
                       onClick={() => setActiveRoom(r)}
-                      className={`w-full flex items-center justify-between p-3.5 rounded-xl border text-xs transition-all cursor-pointer text-left ${
-                        isSelected
-                          ? "bg-blue-600 text-white border-blue-700 font-bold shadow-lg"
-                          : "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-100 hover:border-slate-200"
-                      }`}
+                      className={`w-full flex items-center justify-between p-3.5 rounded-xl border text-xs transition-all cursor-pointer text-left ${isSelected
+                        ? "bg-blue-600 text-white border-blue-700 font-bold shadow-lg"
+                        : "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-100 hover:border-slate-200"
+                        }`}
                     >
                       <div className="flex flex-col items-start gap-0.5">
                         <span className={isSelected ? "text-white font-bold" : "text-slate-800 font-bold"}>{r.name}</span>
@@ -1284,11 +1296,10 @@ const GedungRoomDetailSidebar: React.FC<GedungRoomDetailSidebarProps> = ({
                           Fungsi: {r.deskripsi || "Kelas"}
                         </span>
                       </div>
-                      <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase ${
-                        isSelected
-                          ? "bg-white/20 text-white"
-                          : (r.status_kelayakan === 'Layak' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600')
-                      }`}>
+                      <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase ${isSelected
+                        ? "bg-white/20 text-white"
+                        : (r.status_kelayakan === 'Layak' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600')
+                        }`}>
                         {r.status_kelayakan}
                       </span>
                     </button>
