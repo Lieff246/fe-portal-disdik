@@ -72,7 +72,7 @@ export const PortalHeroSection: React.FC<Props> = ({
       </div>
 
       {/* Main Flex Content - AT LOWER Z-INDEX */}
-      <div className="relative z-10 w-full flex flex-col lg:flex-row gap-4 items-stretch px-10">
+      <div className="relative z-10 w-full flex flex-col lg:flex-row gap-4 items-start px-10">
         {/* Left: Proyeksi */}
         <div className="flex-[3] flex flex-col gap-6">
           <div className="w-full lg:w-1/3">
@@ -86,23 +86,14 @@ export const PortalHeroSection: React.FC<Props> = ({
           </div>
           <GeneralDataSection data={portalData?.summary} />
         </div>
-        {/* Right: Portal Data */}
-        <div className="flex-[1] relative">
-          <div className="lg:absolute lg:inset-0 flex flex-col gap-6">
-            {/* Label "Portal Data" (Tetap diam, shrink-0 agar tidak terkompres) */}
-            <div className="flex flex-col gap-1 text-right lg:text-left border-l-3 pl-4 border-[#2563EB] shrink-0 text-slate-800">
-              <div className="font-bold">Portal Data</div>
-              <div className="text-sm font-medium">
-                Dinas Pendidikan Prov. Sulawesi Tengah
-              </div>
-            </div>
-
-            {/* Container Kartu (Hanya area ini yang akan muncul scrollbar) */}
-            <div className="flex-1 lg:overflow-y-auto lg:pr-2 scrollbar-hide hover:scrollbar-thumb-gray-400 flex flex-col gap-6">
-              <PortalDataCards cards={cards} gtkStats={gtkStats} />
-            </div>
-          </div>
-        </div>{" "}
+        {/* Right: Portal Data (Kabupaten & Kota Cards) */}
+        <div className="flex-[1] flex flex-col w-full">
+          <PortalDataCards
+            cards={cards}
+            gtkStats={gtkStats}
+            onViewRegionDetail={onViewRegionDetail}
+          />
+        </div>
       </div>
 
       <div className="w-full flex justify-between items-start mt-10 relative z-10 px-10">
