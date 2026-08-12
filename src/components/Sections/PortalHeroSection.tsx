@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { SulawesiMap } from "../Fragments/SulawesiMap";
 import { GeneralDataSection } from "./GeneralDataSection";
 import { ProgressUpdateSection } from "./ProgressUpdateSection";
@@ -33,7 +34,16 @@ export const PortalHeroSection: React.FC<Props> = ({
   proyeksiLoading,
   currentMonth,
 }) => {
-  // console.log(portalData);
+  const navigate = useNavigate();
+
+  const handleViewRegionDetail = (region: any) => {
+    if (onViewRegionDetail) {
+      onViewRegionDetail(region);
+    } else {
+      const slug = region.slug ?? "cabdis-1";
+      navigate(`/${slug}?name=${encodeURIComponent(region.name ?? region.kabupaten ?? "")}`);
+    }
+  };
 
 
   const schoolSummary = portalData?.cards?.school_reports;
@@ -66,7 +76,7 @@ export const PortalHeroSection: React.FC<Props> = ({
           <SulawesiMap
             layer="interactive"
             markers={portalData?.summary?.mapMarkers || []}
-            onViewDetail={onViewRegionDetail}
+            onViewDetail={handleViewRegionDetail}
           />
         </div>
       </div>
@@ -89,9 +99,8 @@ export const PortalHeroSection: React.FC<Props> = ({
         {/* Right: Portal Data (Kabupaten & Kota Cards) */}
         <div className="flex-[1] flex flex-col w-full">
           <PortalDataCards
-            cards={cards}
-            gtkStats={gtkStats}
-            onViewRegionDetail={onViewRegionDetail}
+            cards={portalData?.cards ?? []}
+            onViewRegionDetail={handleViewRegionDetail}
           />
         </div>
       </div>

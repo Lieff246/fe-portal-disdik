@@ -1,82 +1,62 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
-import { PortalService } from "@/services/portalService";
-
+import { PemetaanService } from "@/services/pemetaanService";
 import { Skeleton } from "@/components/Elements/Skeleton/Skeleton";
 
 export const Home = () => {
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState({
-    kabupaten_kota: "",
-    bidang_studi: "",
-    cabdis: "",
-    sekolah: "",
-  });
-
   const [portalData, setPortalData] = useState<any>(null);
-  const [initialProjections, setInitialProjections] = useState<any>(null);
-  console.log(initialProjections);
+
   const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await PortalService.getLandingData();
-      // console.log("teasa");
-      // console.log(res);
-      const summary = res?.data?.summary;
-      const projections = res?.data?.projections;
-      const cards = res?.data?.cards;
-      const neraca = res?.data?.neraca;
+      // Ambil dari backend pemetaan (disdik-pemetaan Laravel)
+      const res = await PemetaanService.getLanding();
+
+      const summary    = res?.data?.summary;
+      const cards      = res?.data?.cards;
       const neracaRekap = res?.data?.neracaRekap;
 
       setPortalData({
-        summary,
-        projections,
-        cards,
-        gtkStats: neracaRekap,
-        neraca,
-        neracaRekap,
+        // summary untuk GeneralDataSection
+        summary: {
+          total_sekolah  : summary?.total_sekolah  ?? 0,
+          total_siswa    : summary?.total_siswa    ?? 0,
+          // Field berikut belum ada di backend (data GTK) — tampilkan 0 dulu
+          total_rombel   : 0,
+          total_guru     : 0,
+          total_tendik   : 0,
+          total_pegawai  : 0,
+          semester_id    : summary?.semester_id,
+          // mapMarkers dibuat dari cards kabupaten untuk peta
+          mapMarkers: (cards ?? []).map((c: any, idx: number) => ({
+            id   : idx + 1,
+            name : c.kabupaten,
+            lat  : 0,   // koordinat belum ada di endpoint landing — kosong dulu
+            lng  : 0,
+            stats: {
+              schools  : c.total_sekolah  ?? 0,
+              students : c.total_siswa    ?? 0,
+              teachers : 0,
+            },
+          })),
+        },
+
+        // cards untuk PortalDataCards — merge dengan data kabupaten dari API
+        cards: cards ?? [],
+
+        // neracaRekap — dipakai oleh NeracaSidebar
+        neracaRekap: neracaRekap ?? [],
+
+        // projections — belum ada endpoint, kirim null agar ProyeksiCard tidak crash
+        projections: null,
       });
-      setInitialProjections(projections);
     } catch (error) {
-      console.error(error);
+      console.error("Gagal fetch data landing:", error);
     } finally {
       setLoading(false);
     }
   };
-
-  const [proyeksiLoading, setProyeksiLoading] = useState(false);
-
-  const handleProyeksiFilterChange = useCallback(
-    async (range: "monthly" | "yearly", month?: number) => {
-      setProyeksiLoading(true);
-      try {
-        const year = 2026;
-        let params: any = { range };
-
-        if (range === "monthly") {
-          const monthStr = month && month < 10 ? `0${month}` : `${month}`;
-          params.month = `${year}-${monthStr}`;
-        } else {
-          params.month = `${year}-01`;
-        }
-
-        const res = await PortalService.getProjections(params);
-
-        setPortalData((prev: any) => ({
-          ...prev,
-          projections: {
-            ...prev.projections,
-            [range]: res,
-          },
-        }));
-      } catch (error) {
-        console.error("Failed to fetch projections:", error);
-      } finally {
-        setProyeksiLoading(false);
-      }
-    },
-    [],
-  );
 
   useEffect(() => {
     fetchData();
@@ -98,10 +78,9 @@ export const Home = () => {
   return (
     <DashboardLayout
       portalData={portalData}
-      filters={filters}
-      onFilterChange={setFilters}
-      onProyeksiFilterChange={handleProyeksiFilterChange}
-      proyeksiLoading={proyeksiLoading}
+      onFilterChange={() => {}}
+      onProyeksiFilterChange={() => {}}
+      proyeksiLoading={false}
     />
   );
 };
