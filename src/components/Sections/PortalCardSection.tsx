@@ -29,7 +29,13 @@ const KODE_KAB_TO_CABDIS: Record<string, string> = {
 const getRegionLogo = (kabupaten: string) => {
   // Normalise: "Kota Palu" → "Kota Palu", "Kab. Donggala" → "Kabupaten Donggala"
   const isKota = kabupaten.toLowerCase().startsWith("kota");
-  const name = kabupaten.replace(/^Kab\.\s*/i, "").replace(/^Kota\s*/i, "").trim();
+  let name = kabupaten.replace(/^Kab\.\s*/i, "").replace(/^Kota\s*/i, "").trim();
+  
+  // Fix for Tojo Una-Una (database sometimes has "Tojo Una Una" without hyphen)
+  if (name.toLowerCase() === "tojo una una") {
+    name = "Tojo Una-Una";
+  }
+
   const prefix = isKota ? "Kota" : "Kabupaten";
   return `/images/kabupaten_kota.png/${encodeURIComponent(`${prefix} ${name}`)}.png`;
 };
@@ -40,6 +46,11 @@ export const PortalDataCards: React.FC<PortalDataCardsProps> = ({
 }) => {
   const navigate = useNavigate();
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Drag to scroll refs
+  const isDown = useRef(false);
+  const startY = useRef(0);
+  const scrollTop = useRef(0);
 
   // Kalau cards dari landing kosong / belum tersedia, fetch statistik kabupaten
   const [statCards, setStatCards] = useState<any[]>([]);
@@ -64,13 +75,52 @@ export const PortalDataCards: React.FC<PortalDataCardsProps> = ({
     const slug = KODE_KAB_TO_CABDIS[item.kode_kabupaten] ?? "cabdis-1";
     if (onViewRegionDetail) {
       onViewRegionDetail({ ...item, slug });
-    } else {
+    } else if (slug) {
       navigate(`/${slug}?name=${encodeURIComponent(item.kabupaten ?? item.nama ?? "")}`);
     }
   };
 
+  // Drag to scroll handlers
+  const handleMouseDown = (e: React.MouseEvent) => {
+    isDown.current = true;
+    if (scrollRef.current) {
+      scrollRef.current.style.cursor = "grabbing";
+      startY.current = e.pageY - scrollRef.current.offsetTop;
+      scrollTop.current = scrollRef.current.scrollTop;
+    }
+  };
+
+  const handleMouseLeave = () => {
+    isDown.current = false;
+    if (scrollRef.current) scrollRef.current.style.cursor = "grab";
+  };
+
+  const handleMouseUp = () => {
+    isDown.current = false;
+    if (scrollRef.current) scrollRef.current.style.cursor = "grab";
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDown.current || !scrollRef.current) return;
+    e.preventDefault();
+    const y = e.pageY - scrollRef.current.offsetTop;
+    const walk = (y - startY.current) * 1.5; // Scroll speed multiplier
+    scrollRef.current.scrollTop = scrollTop.current - walk;
+  };
+
+  // Urutkan card agar "Kota Palu" berada di urutan pertama
+  const sortedCards = [...statCards].sort((a, b) => {
+    const nameA = (a.kabupaten || a.nama || "").toLowerCase();
+    const nameB = (b.kabupaten || b.nama || "").toLowerCase();
+    
+    if (nameA.includes("kota palu")) return -1;
+    if (nameB.includes("kota palu")) return 1;
+    
+    return 0;
+  });
+
   return (
-    <div className="relative flex h-[580px] flex-col overflow-hidden rounded-[2.5rem] border border-slate-200/80 bg-gradient-to-br from-white via-slate-50 to-blue-50/70 p-6 shadow-[0_35px_90px_-35px_rgba(15,23,42,0.35)] font-poppins sm:p-7">
+    <div className="relative flex h-[680px] flex-col overflow-hidden rounded-[2.5rem] border border-slate-200/80 bg-gradient-to-br from-white via-slate-50 to-blue-50/70 p-6 shadow-[0_35px_90px_-35px_rgba(15,23,42,0.35)] font-poppins sm:p-7">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(37,99,235,0.10),_transparent_40%)]" />
 
       {/* Header */}
@@ -86,24 +136,16 @@ export const PortalDataCards: React.FC<PortalDataCardsProps> = ({
         </p>
       </div>
 
-      {/* Left badge: Provinsi */}
-      <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 hidden lg:flex flex-col items-center gap-3 bg-white/90 border border-slate-100 rounded-[2rem] p-5 shadow-xl z-10 w-44">
-        <div className="text-[9px] font-black uppercase tracking-widest text-blue-600 mb-1">Provinsi</div>
-        <div className="w-14 h-14 rounded-2xl overflow-hidden border border-slate-100 shadow-sm flex items-center justify-center bg-white">
-          <img src="/logo.png" alt="Logo Sulteng" className="w-full h-full object-contain" />
-        </div>
-        <div>
-          <div className="font-extrabold text-slate-900 text-xs text-center leading-snug">Portal Dinas Pendidikan</div>
-          <div className="text-[10px] text-slate-500 text-center mt-0.5">Provinsi Sulawesi Tengah</div>
-        </div>
-        <div className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest text-center mt-1">Ringkasan</div>
-        <div className="w-full text-xs font-bold text-slate-700 text-center">Pengelolaan Provinsi (SMA, SMK, SLB)</div>
-      </div>
+
 
       {/* Scrollable list */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto pr-1 space-y-4 scrollbar-hide rounded-[2rem]"
+        onMouseDown={handleMouseDown}
+        onMouseLeave={handleMouseLeave}
+        onMouseUp={handleMouseUp}
+        onMouseMove={handleMouseMove}
+        className="flex-1 overflow-y-auto pr-1 space-y-4 scrollbar-hide rounded-[2rem] cursor-grab select-none"
       >
         {loadingStat && (
           <div className="py-10 text-center text-xs text-slate-400 font-bold uppercase tracking-widest">
@@ -111,13 +153,13 @@ export const PortalDataCards: React.FC<PortalDataCardsProps> = ({
           </div>
         )}
 
-        {!loadingStat && statCards.length === 0 && (
+        {!loadingStat && sortedCards.length === 0 && (
           <div className="py-10 text-center text-xs text-slate-400 font-bold uppercase tracking-widest">
             Data belum tersedia
           </div>
         )}
 
-        {statCards.map((item, idx) => (
+        {sortedCards.map((item, idx) => (
           <div
             key={idx}
             className="flex flex-col gap-4 rounded-[2rem] border border-slate-200/80 bg-gradient-to-br from-white via-slate-50 to-white p-5 shadow-[0_18px_50px_-24px_rgba(15,23,42,0.35)] transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_22px_55px_-24px_rgba(15,23,42,0.4)]"

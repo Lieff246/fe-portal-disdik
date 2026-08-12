@@ -10,10 +10,11 @@ export const Home = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch landing + statistik kabupaten secara paralel
-      const [landingRes, statKabRes] = await Promise.all([
+      // Fetch landing + statistik kabupaten + jenjang secara paralel
+      const [landingRes, statKabRes, statJenjangRes] = await Promise.all([
         PemetaanService.getLanding(),
         PemetaanService.getStatistikKabupaten(),
+        PemetaanService.getStatistikJenjang(),
       ]);
 
       const summary      = landingRes?.data?.summary;
@@ -21,6 +22,8 @@ export const Home = () => {
       const neracaRekap  = landingRes?.data?.neracaRekap ?? [];
       // Data statistik per kabupaten untuk marker peta
       const kabupatenStats = statKabRes?.data ?? [];
+      // Data statistik per jenjang untuk card provinsi
+      const jenjangStats = statJenjangRes?.data ?? [];
 
       setPortalData({
         summary: {
@@ -43,6 +46,9 @@ export const Home = () => {
 
         // Statistik per kabupaten → dipakai marker peta
         kabupatenStats,
+
+        // Statistik per jenjang → dipakai ProyeksiCard (card kiri)
+        jenjangStats,
 
         // Cards per kabupaten → dipakai PortalDataCards
         cards,
