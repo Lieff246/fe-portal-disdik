@@ -35,21 +35,21 @@ interface KabupatenStat {
 }
 
 // ─── Koordinat sentroid per kabupaten (lat, lng) ──────────────────────────────
-// Dihitung manual berdasarkan posisi geografis Sulawesi Tengah
+// Diverifikasi berdasarkan GeoJSON sulteng.geojson
 const KABUPATEN_CENTROIDS: Record<string, { lat: number; lng: number; nama: string; slug: string }> = {
-  "7271": { lat: -0.896,  lng: 119.870, nama: "Kota Palu",          slug: "cabdis-1" },
-  "7210": { lat: -1.190,  lng: 120.010, nama: "Kab. Sigi",          slug: "cabdis-1" },
-  "7203": { lat: -0.500,  lng: 119.750, nama: "Kab. Donggala",      slug: "cabdis-2" },
-  "7208": { lat: -0.580,  lng: 120.650, nama: "Kab. Parigi Moutong",slug: "cabdis-2" },
-  "7202": { lat: -1.400,  lng: 120.750, nama: "Kab. Poso",          slug: "cabdis-3" },
-  "7209": { lat: -1.150,  lng: 121.800, nama: "Kab. Tojo Una-Una",  slug: "cabdis-3" },
-  "7206": { lat: -2.500,  lng: 121.700, nama: "Kab. Morowali",      slug: "cabdis-4" },
-  "7212": { lat: -2.000,  lng: 121.200, nama: "Kab. Morowali Utara",slug: "cabdis-4" },
-  "7201": { lat: -1.200,  lng: 122.900, nama: "Kab. Banggai",       slug: "cabdis-5" },
-  "7207": { lat: -1.750,  lng: 123.250, nama: "Kab. Banggai Kepulauan", slug: "cabdis-5" },
-  "7211": { lat: -1.920,  lng: 123.500, nama: "Kab. Banggai Laut",  slug: "cabdis-5" },
-  "7204": { lat:  1.050,  lng: 121.200, nama: "Kab. Tolitoli",      slug: "cabdis-6" },
-  "7205": { lat:  0.900,  lng: 121.900, nama: "Kab. Buol",          slug: "cabdis-6" },
+  "7271": { lat: -0.896,  lng: 119.870, nama: "Kota Palu",             slug: "cabdis-1" },
+  "7210": { lat: -1.150,  lng: 119.950, nama: "Kab. Sigi",             slug: "cabdis-1" },
+  "7203": { lat:  0.300,  lng: 119.750, nama: "Kab. Donggala",         slug: "cabdis-2" },
+  "7208": { lat: -0.803917, lng: 120.168472, nama: "Kab. Parigi Moutong", slug: "cabdis-2" },
+  "7202": { lat: -1.500,  lng: 120.450, nama: "Kab. Poso",             slug: "cabdis-3" },
+  "7209": { lat: -1.300,  lng: 121.600, nama: "Kab. Tojo Una-Una",     slug: "cabdis-3" },
+  "7206": { lat: -2.800,  lng: 121.750, nama: "Kab. Morowali",         slug: "cabdis-4" },
+  "7212": { lat: -2.100,  lng: 121.150, nama: "Kab. Morowali Utara",   slug: "cabdis-4" },
+  "7201": { lat: -1.100,  lng: 122.850, nama: "Kab. Banggai",          slug: "cabdis-5" },
+  "7207": { lat: -1.750,  lng: 123.250, nama: "Kab. Banggai Kepulauan",slug: "cabdis-5" },
+  "7211": { lat: -2.050,  lng: 123.480, nama: "Kab. Banggai Laut",     slug: "cabdis-5" },
+  "7204": { lat:  1.050,  lng: 121.200, nama: "Kab. Tolitoli",         slug: "cabdis-6" },
+  "7205": { lat:  0.950,  lng: 121.900, nama: "Kab. Buol",             slug: "cabdis-6" },
 };
 
 // ─── Warna per cabdis ─────────────────────────────────────────────────────────

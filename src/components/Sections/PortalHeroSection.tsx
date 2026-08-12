@@ -11,10 +11,7 @@ interface Props {
   onViewRegionDetail: (marker: any) => void;
   onOpenNeraca?: () => void;
   onOpenBantuan?: () => void;
-  onProyeksiFilterChange?: (
-    range: "monthly" | "yearly",
-    month?: number,
-  ) => void;
+  onProyeksiFilterChange?: (range: "monthly" | "yearly", month?: number) => void;
   onOpenProyeksiDetail?: (category: string) => void;
   onOpenJatuhTempoDetail?: (category: string) => void;
   onOpenSchoolReports?: () => void;
@@ -45,34 +42,34 @@ export const PortalHeroSection: React.FC<Props> = ({
     }
   };
 
-
-  const schoolSummary = portalData?.cards?.school_reports;
-
-  const cards = portalData?.cards || {
-    kepegawaian: { finished: 0, total: 1000, percentage: 0 },
-  };
-
-  const gtkStats = portalData?.gtkStats || {
-    stats: { abk_recap: { recap: { kekurangan: 0, kelebihan: 0, ideal: 0 } } },
-  };
+  const schoolSummary = portalData?.school_reports;
 
   return (
-    <section className="relative w-full py-10 px-4 md:px-10 flex flex-col items-center justify-center overflow-hidden">
-      {/* Center: Title & Hero Title */}
-      <div className="absolute top-8 left-1/2 -translate-x-1/2 flex flex-col items-center justify-start z-10 pointer-events-none">
-        <img src="/logo.png" className="w-[50%]" alt="Logo" />
+    <section className="relative w-full min-h-screen overflow-hidden">
+
+      {/* ── LAYER 1: Peta background Indonesia (abu-abu, paling bawah) ── */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <SulawesiMap layer="base" />
       </div>
 
-      {/* Map Background (BASE) - BEHIND EVERYTHING */}
-      <div className="absolute inset-0 z-0 overflow-hidden">
-        <div className="w-full h-full scale-[1.1] flex items-center justify-center">
-          <SulawesiMap layer="base" />
-        </div>
-      </div>
-
-      {/* Map Background (INTERACTIVE) - pointer-events aktif untuk klik marker kabupaten */}
-      <div className="absolute inset-0 z-20 pointer-events-auto overflow-hidden">
-        <div className="w-full h-full scale-[1.1] flex items-center justify-center">
+      {/* ── LAYER 2: Peta interaktif Sulawesi Tengah (TENGAH, hanya area peta yg klik) ── */}
+      {/*
+        Peta diletakkan di TENGAH layar secara absolut.
+        pointer-events dibatasi hanya pada area peta itu sendiri
+        agar card kiri & kanan tetap bisa diklik.
+        Ukuran diperkecil agar tidak overlap dengan cards samping.
+      */}
+      <div
+        className="absolute z-10 pointer-events-none"
+        style={{
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          width: "clamp(400px, 45vw, 700px)",
+          height: "clamp(350px, 65vh, 600px)",
+        }}
+      >
+        <div className="pointer-events-auto w-full h-full">
           <SulawesiMap
             layer="interactive"
             kabupatenStats={portalData?.kabupatenStats ?? []}
@@ -80,11 +77,19 @@ export const PortalHeroSection: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* Main Flex Content - AT LOWER Z-INDEX */}
-      <div className="relative z-10 w-full flex flex-col lg:flex-row gap-4 items-start px-10">
-        {/* Left: Proyeksi */}
-        <div className="flex-[3] flex flex-col gap-6">
-          <div className="w-full lg:w-1/3">
+      {/* ── LAYER 3: Logo di tengah atas ── */}
+      <div className="absolute top-6 left-1/2 -translate-x-1/2 z-20 pointer-events-none flex flex-col items-center">
+        <img src="/logo.png" className="h-12 object-contain" alt="Logo Portal" />
+      </div>
+
+      {/* ── LAYER 4: Konten utama (card kiri + card kanan) — z-30, DI ATAS peta ── */}
+      <div className="relative z-30 w-full min-h-screen flex flex-col">
+
+        {/* Row utama */}
+        <div className="flex flex-col lg:flex-row gap-6 items-start justify-between w-full px-6 lg:px-10 pt-24 pb-6">
+
+          {/* ── KIRI: ProyeksiCard + GeneralData ── */}
+          <div className="flex-none w-full lg:w-[300px] xl:w-[320px] flex flex-col gap-5 pointer-events-auto">
             <ProyeksiCard
               projections={portalData?.projections}
               onFilterChange={onProyeksiFilterChange}
@@ -92,112 +97,92 @@ export const PortalHeroSection: React.FC<Props> = ({
               onOpenJatuhTempoDetail={onOpenJatuhTempoDetail}
               isLoading={proyeksiLoading}
             />
+            <GeneralDataSection data={portalData?.summary} />
           </div>
-          <GeneralDataSection data={portalData?.summary} />
-        </div>
-        {/* Right: Portal Data (Kabupaten & Kota Cards) */}
-        <div className="flex-[1] flex flex-col w-full">
-          <PortalDataCards
-            cards={portalData?.cards ?? []}
-            onViewRegionDetail={handleViewRegionDetail}
-          />
-        </div>
-      </div>
 
-      <div className="w-full flex justify-between items-start mt-10 relative z-10 px-10">
-        {/* Combined Neraca & Bantuan Cards */}
-        <div className="flex gap-4">
-          <div
-            className="w-64 p-6 rounded-[2.5rem] bg-gradient-to-br from-[#2588EB] via-[#3b82f6] to-[#10B981] text-white flex flex-col gap-4 cursor-pointer hover:scale-105 transition-transform shadow-xl shadow-blue-500/20"
-            onClick={onOpenNeraca}
-          >
-            <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                />
-              </svg>
-            </div>
-            <div>
-              <div className="font-bold text-sm">
-                Neraca Pendidikan
-              </div>
-              <p className="text-xs text-white/80 font-medium leading-relaxed">
-                Data Dapodik GTK & Kepegawaian Daerah
-              </p>
-            </div>
-            <button
-              className="w-full py-3 bg-blue-700/30 rounded-2xl text-xs font-semibold border border-white/10 hover:bg-white/20 transition-colors mt-auto"
-              onClick={(e) => {
-                e.stopPropagation();
-                onOpenNeraca?.();
-              }}
+          {/* ── TENGAH: kosong (area peta) ── */}
+          <div className="flex-1 hidden lg:block min-w-[400px]" aria-hidden="true" />
+
+          {/* ── KANAN: Daftar kabupaten/kota cards ── */}
+          <div className="flex-none w-full lg:w-[300px] xl:w-[320px] pointer-events-auto">
+            <PortalDataCards
+              cards={portalData?.cards ?? []}
+              onViewRegionDetail={handleViewRegionDetail}
+            />
+          </div>
+        </div>
+
+        {/* ── Baris bawah: Neraca + Bantuan + Progress ── */}
+        <div className="w-full flex flex-col lg:flex-row justify-between items-start gap-5 px-6 lg:px-10 pb-8 pointer-events-auto">
+
+          {/* Neraca & Bantuan */}
+          <div className="flex flex-wrap gap-4 shrink-0">
+            {/* Neraca */}
+            <div
+              className="w-60 p-5 rounded-[2rem] bg-gradient-to-br from-[#2588EB] via-[#3b82f6] to-[#10B981] text-white flex flex-col gap-3 cursor-pointer hover:scale-[1.03] transition-transform shadow-xl shadow-blue-500/20"
+              onClick={onOpenNeraca}
             >
-              Lihat Neraca
-            </button>
-          </div>
-
-          <div
-            className="w-64 p-6 rounded-[2.5rem] bg-gradient-to-b from-[#8B5CF6] to-[#A78BFA] text-white flex flex-col gap-4 cursor-pointer hover:scale-105 transition-transform shadow-xl shadow-violet-500/20"
-            onClick={onOpenBantuan}
-          >
-            <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"
-                />
-              </svg>
-            </div>
-            <div>
-              <div className="font-bold text-sm">
-                Customer Center / Bantuan
+              <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
               </div>
-              <p className="text-xs text-white/80 font-medium leading-relaxed">
-                Layanan Bantuan & SOP Pulpen
-              </p>
+              <div>
+                <div className="font-bold text-sm">Neraca Pendidikan</div>
+                <p className="text-xs text-white/80 font-medium leading-relaxed mt-0.5">
+                  Data Dapodik GTK & Kepegawaian Daerah
+                </p>
+              </div>
+              <button
+                className="w-full py-2.5 bg-blue-700/30 rounded-xl text-xs font-semibold border border-white/10 hover:bg-white/20 transition-colors mt-auto cursor-pointer"
+                onClick={(e) => { e.stopPropagation(); onOpenNeraca?.(); }}
+              >
+                Lihat Neraca
+              </button>
             </div>
-            <button
-              className="w-full py-3 bg-violet-700/50 rounded-2xl text-xs font-semibold border border-white/10 hover:bg-violet-500 transition-colors mt-auto"
-              onClick={(e) => {
-                e.stopPropagation();
-                onOpenBantuan?.();
-              }}
+
+            {/* Bantuan */}
+            <div
+              className="w-60 p-5 rounded-[2rem] bg-gradient-to-b from-[#8B5CF6] to-[#A78BFA] text-white flex flex-col gap-3 cursor-pointer hover:scale-[1.03] transition-transform shadow-xl shadow-violet-500/20"
+              onClick={onOpenBantuan}
             >
-              Lihat Bantuan
-            </button>
+              <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+              </div>
+              <div>
+                <div className="font-bold text-sm">Customer Center / Bantuan</div>
+                <p className="text-xs text-white/80 font-medium leading-relaxed mt-0.5">
+                  Layanan Bantuan & SOP Pulpen
+                </p>
+              </div>
+              <button
+                className="w-full py-2.5 bg-violet-700/50 rounded-xl text-xs font-semibold border border-white/10 hover:bg-white/20 transition-colors mt-auto cursor-pointer"
+                onClick={(e) => { e.stopPropagation(); onOpenBantuan?.(); }}
+              >
+                Lihat Bantuan
+              </button>
+            </div>
+          </div>
+
+          {/* Progress */}
+          <div className="flex-1">
+            <ProgressUpdateSection
+              summary={schoolSummary}
+              currentMonth={currentMonth}
+              onClick={onOpenSchoolReports}
+            />
           </div>
         </div>
 
-        <div className="flex-1 ml-6">
-          <ProgressUpdateSection
-            summary={schoolSummary}
-            currentMonth={currentMonth}
-            onClick={onOpenSchoolReports}
-          />
-        </div>
-      </div>
-
-      <footer className="py-0 flex flex-col items-center gap-6 opacity-50 mt-10">
-        <p className="text-center">
+        {/* Footer */}
+        <footer className="w-full py-4 text-center text-xs opacity-40 shrink-0 pointer-events-none">
           &copy; 2026 BLPT - Dinas Pendidikan Provinsi Sulawesi Tengah
-        </p>
-      </footer>
+        </footer>
+      </div>
     </section>
   );
 };
