@@ -70,13 +70,12 @@ export const PortalHeroSection: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* Map Background (INTERACTIVE) - ON TOP OF EVERYTHING */}
-      <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden">
+      {/* Map Background (INTERACTIVE) - pointer-events aktif untuk klik marker kabupaten */}
+      <div className="absolute inset-0 z-20 pointer-events-auto overflow-hidden">
         <div className="w-full h-full scale-[1.1] flex items-center justify-center">
           <SulawesiMap
             layer="interactive"
-            markers={portalData?.summary?.mapMarkers || []}
-            onViewDetail={handleViewRegionDetail}
+            kabupatenStats={portalData?.kabupatenStats ?? []}
           />
         </div>
       </div>

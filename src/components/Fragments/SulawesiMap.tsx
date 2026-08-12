@@ -1,173 +1,200 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { MapContainer, GeoJSON, Marker, Tooltip, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { CABANG_DATA } from "@/types";
+import { useNavigate } from "react-router-dom";
 
 import indonesiaGeoData from "@/assets/geojson/indonesia-provinces.json";
 
-// --- PROPS ---
+// ─── Props ────────────────────────────────────────────────────────────────────
 interface MapProps {
-  markers?: any[]; // Cabdis stats
-  kabupatenStats?: any[];
-  onViewDetail?: (marker: any) => void;
+  /** Array statistik per kabupaten dari /v1/statistik/kabupaten atau /v1/portal/landing */
+  kabupatenStats?: KabupatenStat[];
   onSchoolClick?: (school: any) => void;
   onPopupClose?: () => void;
   layer?: "base" | "interactive";
   onlyShowId?: number | null;
-  interactive?: boolean;
   schools?: any[];
   customCenter?: [number, number] | null;
   customZoom?: number | null;
   selectedSchool?: any;
+  /** @deprecated pakai kabupatenStats */
+  markers?: any[];
+  /** @deprecated */
+  onViewDetail?: (marker: any) => void;
 }
 
-// --- ICONS ---
-const yellowDotIcon = L.divIcon({
-  className: "custom-marker-dot",
-  html: `<div class="marker-container">
-    <div class="marker-core bg-amber-400 border-2 border-amber-600"></div>
-  </div>`,
-  iconSize: [16, 16],
-  iconAnchor: [8, 8],
-});
+interface KabupatenStat {
+  kabupaten: string;
+  kode_kabupaten: string;
+  total_sekolah: number;
+  total_negeri?: number;
+  total_swasta?: number;
+  total_siswa?: number;
+  total_3t?: number;
+}
+
+// ─── Koordinat sentroid per kabupaten (lat, lng) ──────────────────────────────
+// Dihitung manual berdasarkan posisi geografis Sulawesi Tengah
+const KABUPATEN_CENTROIDS: Record<string, { lat: number; lng: number; nama: string; slug: string }> = {
+  "7271": { lat: -0.896,  lng: 119.870, nama: "Kota Palu",          slug: "cabdis-1" },
+  "7210": { lat: -1.190,  lng: 120.010, nama: "Kab. Sigi",          slug: "cabdis-1" },
+  "7203": { lat: -0.500,  lng: 119.750, nama: "Kab. Donggala",      slug: "cabdis-2" },
+  "7208": { lat: -0.580,  lng: 120.650, nama: "Kab. Parigi Moutong",slug: "cabdis-2" },
+  "7202": { lat: -1.400,  lng: 120.750, nama: "Kab. Poso",          slug: "cabdis-3" },
+  "7209": { lat: -1.150,  lng: 121.800, nama: "Kab. Tojo Una-Una",  slug: "cabdis-3" },
+  "7206": { lat: -2.500,  lng: 121.700, nama: "Kab. Morowali",      slug: "cabdis-4" },
+  "7212": { lat: -2.000,  lng: 121.200, nama: "Kab. Morowali Utara",slug: "cabdis-4" },
+  "7201": { lat: -1.200,  lng: 122.900, nama: "Kab. Banggai",       slug: "cabdis-5" },
+  "7207": { lat: -1.750,  lng: 123.250, nama: "Kab. Banggai Kepulauan", slug: "cabdis-5" },
+  "7211": { lat: -1.920,  lng: 123.500, nama: "Kab. Banggai Laut",  slug: "cabdis-5" },
+  "7204": { lat:  1.050,  lng: 121.200, nama: "Kab. Tolitoli",      slug: "cabdis-6" },
+  "7205": { lat:  0.900,  lng: 121.900, nama: "Kab. Buol",          slug: "cabdis-6" },
+};
+
+// ─── Warna per cabdis ─────────────────────────────────────────────────────────
+const CABDIS_COLOR: Record<string, string> = {
+  "cabdis-1": "#2563eb", // Biru - Palu & Sigi
+  "cabdis-2": "#7c3aed", // Ungu - Donggala & Parimo
+  "cabdis-3": "#0891b2", // Cyan - Poso & Tojo
+  "cabdis-4": "#059669", // Hijau - Morowali
+  "cabdis-5": "#d97706", // Amber - Banggai
+  "cabdis-6": "#dc2626", // Merah - Tolitoli & Buol
+};
+
+// ─── Marker Icon per kabupaten ─────────────────────────────────────────────────
+const createKabupatenIcon = (color: string, isActive = false) =>
+  L.divIcon({
+    className: "",
+    html: `
+      <div style="
+        position:relative;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+      ">
+        ${isActive ? `<div style="
+          position:absolute;
+          width:32px; height:32px;
+          border-radius:50%;
+          background:${color}33;
+          animation:ping 1.4s cubic-bezier(0,0,.2,1) infinite;
+        "></div>` : ""}
+        <div style="
+          width:18px; height:18px;
+          border-radius:50%;
+          background:${color};
+          border:3px solid white;
+          box-shadow:0 2px 8px ${color}88;
+          position:relative;
+          z-index:2;
+          transition:transform .15s;
+        "></div>
+      </div>`,
+    iconSize: [18, 18],
+    iconAnchor: [9, 9],
+    popupAnchor: [0, -12],
+  });
 
 const schoolNegeriIcon = L.divIcon({
-  html: `<div class="school-marker-core negeri" style="background-color: #2563eb; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.3);"></div>`,
+  html: `<div style="background:#2563eb;width:10px;height:10px;border-radius:50%;border:2px solid white;box-shadow:0 0 4px rgba(0,0,0,.3)"></div>`,
   className: "school-marker-icon",
-  iconSize: [12, 12],
-  iconAnchor: [6, 6],
+  iconSize: [10, 10],
+  iconAnchor: [5, 5],
 });
 
 const schoolSwastaIcon = L.divIcon({
-  html: `<div class="school-marker-core swasta" style="background-color: #10b981; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.3);"></div>`,
+  html: `<div style="background:#10b981;width:10px;height:10px;border-radius:50%;border:2px solid white;box-shadow:0 0 4px rgba(0,0,0,.3)"></div>`,
   className: "school-marker-icon",
-  iconSize: [12, 12],
-  iconAnchor: [6, 6],
+  iconSize: [10, 10],
+  iconAnchor: [5, 5],
 });
 
-
-// --- COLOR SCALE ---
-const RANK_COLORS = [
-  "#2563eb",
-  "#2563eb",
-  "#2563eb",
-  "#2563eb",
-  "#2563eb",
-  "#2563eb",
-];
-
-
-const getRegionNumber = (name: string): string => {
-  const match = name?.match(/\d+/);
-  if (match) return match[0];
-  const nameUpper = name?.toUpperCase() || "";
-  if (nameUpper.includes("WILAYAH I") || nameUpper.includes("WILAYAH 1")) return "1";
-  if (nameUpper.includes("WILAYAH II") || nameUpper.includes("WILAYAH 2")) return "2";
-  if (nameUpper.includes("WILAYAH III") || nameUpper.includes("WILAYAH 3")) return "3";
-  if (nameUpper.includes("WILAYAH IV") || nameUpper.includes("WILAYAH 4")) return "4";
-  if (nameUpper.includes("WILAYAH V") || nameUpper.includes("WILAYAH 5")) return "5";
-  if (nameUpper.includes("WILAYAH VI") || nameUpper.includes("WILAYAH 6")) return "6";
-  return "1";
-};
-
-// Component to handle map bounds focusing dynamically when center or zoom changes
-const ChangeMapView = ({
-  center,
-  zoom,
-  selectedSchool,
-}: {
-  center: [number, number];
-  zoom: number;
-  selectedSchool?: any;
-}) => {
+// ─── Sub-component: sinkronisasi center/zoom ──────────────────────────────────
+const ChangeMapView = ({ center, zoom }: { center: [number, number]; zoom: number }) => {
   const map = useMap();
+  const prev = useRef<string>("");
   useEffect(() => {
-    if (selectedSchool && selectedSchool.latitude && selectedSchool.longitude) {
-      map.panTo([parseFloat(selectedSchool.latitude), parseFloat(selectedSchool.longitude)], {
-        animate: true,
-        duration: 1.0,
-      });
-    } else {
-      map.setView(center, zoom);
+    const key = `${center[0]},${center[1]},${zoom}`;
+    if (key !== prev.current) {
+      prev.current = key;
+      map.setView(center, zoom, { animate: true });
     }
-  }, [center, zoom, selectedSchool, map]);
+  }, [center, zoom, map]);
   return null;
 };
 
+// ─── Main Component ───────────────────────────────────────────────────────────
 export const SulawesiMap: React.FC<MapProps> = ({
-  markers = [],
+  kabupatenStats = [],
   onSchoolClick,
   onPopupClose,
   layer = "base",
   onlyShowId = null,
-  interactive = false,
   schools = [],
   customCenter = null,
   customZoom = null,
   selectedSchool,
 }) => {
+  const navigate = useNavigate();
   const [cabdisGeoData, setCabdisGeoData] = useState<Record<number, any>>({});
-  // const [setActiveMarkerId] = useState<string | number | null>(null);
+  const [sultengGeo, setSultengGeo] = useState<any>(null);
+  const [activeKode, setActiveKode] = useState<string | null>(null);
 
+  // Load geojson
   useEffect(() => {
-    const loadGeoData = async () => {
+    fetch("/geojson/sulteng.geojson")
+      .then((r) => r.json())
+      .then(setSultengGeo)
+      .catch(console.error);
+
+    const loadCabdis = async () => {
       const data: Record<number, any> = {};
       for (let i = 1; i <= 6; i++) {
         try {
           const res = await fetch(`/geojson/cabdis/cabdis${i}.geojson`);
           data[i] = await res.json();
-        } catch (err) {
-          console.error(`Failed to load cabdis${i}.geojson:`, err);
-        }
+        } catch {/* skip */}
       }
       setCabdisGeoData(data);
     };
-    loadGeoData();
+    loadCabdis();
   }, []);
 
-  const cabdisRanks = useMemo(() => {
-    const sorted = [...(markers || [])].sort(
-      (a, b) => (b.stats?.kekurangan || 0) - (a.stats?.kekurangan || 0),
-    );
-    const ranks: Record<string, number> = {};
-    sorted.forEach((item, index) => {
-      ranks[item.name?.toUpperCase()] = index;
-    });
-    return ranks;
-  }, [markers]);
+  // Build lookup: kode_kabupaten → stat data
+  const statByKode = Object.fromEntries(
+    kabupatenStats.map((s) => [s.kode_kabupaten, s])
+  );
 
-  const baseStyle = () => {
+  // Default center Sulawesi Tengah
+  const mapCenter: [number, number] = customCenter ?? [-1.4, 121.0];
+  const mapZoom = customZoom ?? 7.2;
+  const isInteractive = !!onlyShowId;
 
+  // Style peta background Indonesia (abu-abu)
+  const baseStyle = () => ({ color: "#fff", weight: 1, fillColor: "#e2e8f0", fillOpacity: 1 });
+
+  // Style kabupaten (warna per cabdis)
+  const sultengStyle = (feature: any) => {
+    const kode = feature?.properties?.KODE_KAB ?? "";
+    const centroid = KABUPATEN_CENTROIDS[kode];
+    const color = centroid ? (CABDIS_COLOR[centroid.slug] ?? "#2563eb") : "#2563eb";
     return {
-      color: "#ffffff",
+      color: "#fff",
       weight: 1.5,
-      fillColor: "#e2e8f0",
+      fillColor: color,
       fillOpacity: 1,
+      className: "sulteng-region",
     };
   };
 
-  const getCabdisStyle = (cabdisName: string) => {
-    const rank = cabdisRanks[cabdisName.toUpperCase()];
-    const baseColor =
-      rank !== undefined
-          ? RANK_COLORS[rank] || RANK_COLORS[RANK_COLORS.length - 1]
-          : "#2563eb";
-
-    return {
-      color: onlyShowId ? "#3b82f6" : "#ffffff",
-      weight: 1.5,
-      fillColor: onlyShowId ? "#3b82f6" : baseColor,
-      fillOpacity: onlyShowId ? 0.08 : 1,
-      className: "transition-all duration-300",
-    };
-  };
-
-
-  const selectedConfig = onlyShowId ? CABANG_DATA.find((c) => c.id === onlyShowId) : null;
-  const mapCenter = customCenter || (selectedConfig ? selectedConfig.mapCenter as [number, number] : [-4.1, 121.0] as [number, number]);
-  const mapZoom = customZoom || (selectedConfig ? selectedConfig.mapZoom : 7.2);
-  const isInteractive = !!onlyShowId || interactive;
+  // Style cabdis di halaman cabdis (hampir transparan)
+  const cabdisStyle = () => ({
+    color: "#3b82f6",
+    weight: 1.5,
+    fillColor: "#3b82f6",
+    fillOpacity: 0.08,
+  });
 
   return (
     <div className="absolute inset-0 w-full h-full overflow-hidden bg-transparent">
@@ -176,13 +203,15 @@ export const SulawesiMap: React.FC<MapProps> = ({
         zoom={mapZoom}
         zoomControl={isInteractive}
         dragging={isInteractive}
-        scrollWheelZoom={onlyShowId ? false : isInteractive}
-        doubleClickZoom={isInteractive}
-        boxZoom={isInteractive}
+        scrollWheelZoom={false}
+        doubleClickZoom={false}
+        boxZoom={false}
         attributionControl={false}
         style={{ width: "100%", height: "100%", background: "transparent" }}
       >
-        <ChangeMapView center={mapCenter} zoom={mapZoom} selectedSchool={selectedSchool} />
+        <ChangeMapView center={mapCenter} zoom={mapZoom} />
+
+        {/* ── BASE LAYER: Peta Indonesia abu-abu ── */}
         {layer === "base" && (
           <GeoJSON
             data={indonesiaGeoData as any}
@@ -191,104 +220,189 @@ export const SulawesiMap: React.FC<MapProps> = ({
           />
         )}
 
+        {/* ── INTERACTIVE LAYER ── */}
         {layer === "interactive" && (
           <>
-            {Object.entries(cabdisGeoData).map(([num, geo]) => {
-              const numericNum = parseInt(num, 10);
-              if (onlyShowId && onlyShowId !== numericNum) {
-                return null;
-              }
-              const cabdisName = `CABANG DINAS WILAYAH ${num}`;
+            {/* GeoJSON Indonesia (background) */}
+            <GeoJSON
+              data={indonesiaGeoData as any}
+              style={baseStyle}
+              interactive={false}
+            />
 
+            {/* GeoJSON Sulawesi Tengah per kabupaten (warna-warni) */}
+            {sultengGeo && !onlyShowId && (
+              <GeoJSON
+                key="sulteng-colored"
+                data={sultengGeo}
+                style={sultengStyle}
+                interactive={false}
+              />
+            )}
+
+            {/* GeoJSON Cabdis tertentu (untuk halaman cabdis) */}
+            {onlyShowId && Object.entries(cabdisGeoData).map(([num, geo]) => {
+              if (parseInt(num) !== onlyShowId) return null;
               return (
                 <GeoJSON
-                  key={`cabdis-${num}-${(markers || []).length}`}
+                  key={`cabdis-${num}`}
                   data={geo}
-                  style={() => getCabdisStyle(cabdisName)}
+                  style={cabdisStyle}
                   interactive={false}
                 />
               );
             })}
 
-            {/* CENTROID MARKERS (Only draw if not showing specific region) */}
-            {(!onlyShowId) && (markers || []).map((m) => (
-              <Marker
-                key={`marker-${m.id}`}
-                position={[m.lat, m.lng]}
-                icon={yellowDotIcon}
-              >
-                <Tooltip direction="top" offset={[0, -10]} opacity={1} className="custom-map-tooltip-simple">
-                  <span className="font-bold text-slate-700">{m.name}</span>
-                </Tooltip>
-
-                <Popup>
-                  <div className="p-3 min-w-[220px] flex flex-col gap-2 font-poppins text-slate-800">
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Cabang Dinas</span>
-                      <span className="text-sm font-extrabold text-slate-800 leading-snug">{m.name}</span>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-2 py-2 border-y border-slate-100 text-xs">
-                      <div className="flex flex-col">
-                        <span className="text-[9px] text-slate-400 font-bold uppercase">Total Sekolah</span>
-                        <span className="font-extrabold text-slate-700">{m.stats?.schools || 0}</span>
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-[9px] text-slate-400 font-bold uppercase">Total Guru</span>
-                        <span className="font-extrabold text-slate-700">{m.stats?.teachers || 0}</span>
-                      </div>
-                    </div>
-
-                    <a
-                      href={`/cabdis-${getRegionNumber(m.name)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-center text-xs shadow-lg shadow-blue-200 transition-all flex items-center justify-center gap-1.5 cursor-pointer no-underline border border-transparent"
-                    >
-                      Kunjungi Landing Page
-                    </a>
-                  </div>
-                </Popup>
-              </Marker>
-            ))}
-
-            {/* SCHOOL MARKERS (Only draw in regional view) */}
-            {onlyShowId && schools && schools.map((school: any) => {
-              if (!school.latitude || !school.longitude) return null;
-              const isSwasta = school.name?.toUpperCase().includes("SWASTA");
+            {/* ── MARKER PER KABUPATEN/KOTA (Dashboard utama) ── */}
+            {!onlyShowId && Object.entries(KABUPATEN_CENTROIDS).map(([kode, centroid]) => {
+              const stat = statByKode[kode];
+              const color = CABDIS_COLOR[centroid.slug] ?? "#2563eb";
+              const isActive = activeKode === kode;
               return (
                 <Marker
-                  key={school.id}
-                  position={[parseFloat(school.latitude), parseFloat(school.longitude)]}
-                  icon={isSwasta ? schoolSwastaIcon : schoolNegeriIcon}
-                  interactive={true}
+                  key={`kab-${kode}`}
+                  position={[centroid.lat, centroid.lng]}
+                  icon={createKabupatenIcon(color, isActive)}
                   eventHandlers={{
-                    click: () => {
-                      onSchoolClick?.(school);
-                    },
+                    click: () => setActiveKode(kode === activeKode ? null : kode),
                   }}
+                  zIndexOffset={isActive ? 1000 : 0}
                 >
-                  <Tooltip direction="top" offset={[0, -5]}>
-                    <span className="font-bold text-[10px] text-slate-800 uppercase">{school.name}</span>
+                  {/* Tooltip: muncul saat hover */}
+                  <Tooltip
+                    direction="top"
+                    offset={[0, -12]}
+                    opacity={1}
+                    permanent={false}
+                    className="kab-tooltip"
+                  >
+                    <span className="font-bold text-[11px] text-slate-800">
+                      {centroid.nama}
+                    </span>
                   </Tooltip>
+
+                  {/* Popup: card kabupaten */}
+                  <Popup
+                    minWidth={220}
+                    maxWidth={260}
+                    className="kab-popup"
+                    eventHandlers={{
+                      remove: () => setActiveKode(null),
+                    }}
+                  >
+                    <div className="font-poppins p-1 flex flex-col gap-3 min-w-[210px]">
+                      {/* Header */}
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-white font-black text-sm shadow-lg"
+                          style={{ background: color }}
+                        >
+                          {centroid.nama.replace(/Kab\. |Kota /i, "").charAt(0)}
+                        </div>
+                        <div>
+                          <div
+                            className="text-[9px] font-black uppercase tracking-widest mb-0.5"
+                            style={{ color }}
+                          >
+                            Kabupaten / Kota
+                          </div>
+                          <div className="font-extrabold text-slate-900 text-xs leading-snug">
+                            Dinas Pendidikan {centroid.nama}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Stats */}
+                      <div className="grid grid-cols-1 gap-2">
+                        <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-100">
+                          <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                            Total Sekolah
+                          </span>
+                          <span className="font-extrabold text-slate-900 text-sm">
+                            {(stat?.total_sekolah ?? 0).toLocaleString("id-ID")}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-sky-50 border border-sky-100">
+                          <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                            Negeri / Swasta
+                          </span>
+                          <span className="font-extrabold text-slate-900 text-sm">
+                            {stat?.total_negeri ?? 0}
+                            <span className="text-slate-400 font-normal"> / </span>
+                            {stat?.total_swasta ?? 0}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-amber-50 border border-amber-100">
+                          <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                            Total Siswa
+                          </span>
+                          <span className="font-extrabold text-slate-900 text-sm">
+                            {(stat?.total_siswa ?? 0).toLocaleString("id-ID")}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Tombol navigasi */}
+                      <button
+                        onClick={() => {
+                          navigate(
+                            `/${centroid.slug}?name=${encodeURIComponent(centroid.nama)}`
+                          );
+                        }}
+                        className="w-full py-2.5 rounded-xl text-white text-xs font-black uppercase tracking-wider shadow-md transition-all hover:-translate-y-0.5 active:scale-95"
+                        style={{ background: `linear-gradient(135deg, ${color}, ${color}cc)` }}
+                      >
+                        Kunjungi Wilayah →
+                      </button>
+                    </div>
+                  </Popup>
                 </Marker>
               );
             })}
 
-            {/* Active Selected School Popup */}
-            {onlyShowId && selectedSchool && selectedSchool.latitude && selectedSchool.longitude && (
+            {/* ── SCHOOL MARKERS (halaman cabdis) ── */}
+            {onlyShowId &&
+              schools.map((school: any) => {
+                const lat = parseFloat(school.latitude ?? school.lintang);
+                const lng = parseFloat(school.longitude ?? school.bujur);
+                if (!lat || !lng || isNaN(lat) || isNaN(lng)) return null;
+                const isSwasta = school.name?.toUpperCase().includes("SWASTA") ||
+                  school.status_sekolah === "Swasta";
+                return (
+                  <Marker
+                    key={school.id ?? school.npsn}
+                    position={[lat, lng]}
+                    icon={isSwasta ? schoolSwastaIcon : schoolNegeriIcon}
+                    eventHandlers={{ click: () => onSchoolClick?.(school) }}
+                  >
+                    <Tooltip direction="top" offset={[0, -4]}>
+                      <span className="font-bold text-[10px] text-slate-800">
+                        {school.name ?? school.nama}
+                      </span>
+                    </Tooltip>
+                  </Marker>
+                );
+              })}
+
+            {/* Popup sekolah yang dipilih */}
+            {onlyShowId && selectedSchool && (
               <Popup
-                position={[parseFloat(selectedSchool.latitude), parseFloat(selectedSchool.longitude)]}
-                eventHandlers={{
-                  remove: () => {
-                    if (onPopupClose) onPopupClose();
-                  }
-                }}
+                position={[
+                  parseFloat(selectedSchool.latitude ?? selectedSchool.lintang),
+                  parseFloat(selectedSchool.longitude ?? selectedSchool.bujur),
+                ]}
+                eventHandlers={{ remove: () => onPopupClose?.() }}
               >
-                <div className="px-2 py-1.5 flex flex-col gap-0.5 text-slate-800">
-                  <p className="text-[9px] font-black text-blue-600 uppercase tracking-wider mb-0.5">Sekolah Aktif</p>
-                  <p className="text-xs font-bold uppercase leading-snug">{selectedSchool.name}</p>
-                  <p className="text-[9px] text-slate-400 font-bold mt-1">NPSN: {selectedSchool.npsn || "-"}</p>
+                <div className="px-2 py-1.5 flex flex-col gap-0.5 text-slate-800 font-poppins">
+                  <p className="text-[9px] font-black text-blue-600 uppercase tracking-wider mb-0.5">
+                    Sekolah Aktif
+                  </p>
+                  <p className="text-xs font-bold uppercase leading-snug">
+                    {selectedSchool.name ?? selectedSchool.nama}
+                  </p>
+                  <p className="text-[9px] text-slate-400 font-bold mt-0.5">
+                    NPSN: {selectedSchool.npsn ?? "-"}
+                  </p>
                 </div>
               </Popup>
             )}
@@ -297,62 +411,45 @@ export const SulawesiMap: React.FC<MapProps> = ({
       </MapContainer>
 
       <style>{`
-        .leaflet-container { 
-          background: transparent !important; 
-          pointer-events: ${layer === "base" ? "none" : (layer === "interactive" && !onlyShowId ? "none" : "auto")} !important;
+        @keyframes ping {
+          75%, 100% { transform: scale(2); opacity: 0; }
         }
-        .leaflet-popup {
-          pointer-events: auto !important;
-        }
-        .custom-map-tooltip {
+        .leaflet-container {
           background: transparent !important;
-          border: none !important;
-          box-shadow: none !important;
-          padding: 0 !important;
+          pointer-events: ${
+            layer === "base"
+              ? "none"
+              : layer === "interactive" && !onlyShowId
+              ? "auto"
+              : "auto"
+          } !important;
         }
-        .custom-map-tooltip-simple {
+        .leaflet-popup { pointer-events: auto !important; }
+        .kab-tooltip {
           background: white !important;
           border: 1px solid #f1f5f9 !important;
           border-radius: 8px !important;
-          padding: 4px 8px !important;
-          font-size: 10px !important;
-          box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1) !important;
+          padding: 4px 10px !important;
+          font-size: 11px !important;
+          box-shadow: 0 4px 12px rgba(0,0,0,.08) !important;
+          white-space: nowrap !important;
         }
-        .custom-map-tooltip::before, .custom-map-tooltip-simple::before { display: none !important; }
-        .leaflet-interactive { 
-          pointer-events: auto !important;
-          cursor: pointer !important; 
-          transition: fill-opacity 0.3s, stroke-width 0.3s !important;
+        .kab-tooltip::before { display: none !important; }
+        .kab-popup .leaflet-popup-content-wrapper {
+          border-radius: 16px !important;
+          border: 1px solid rgba(0,0,0,.06) !important;
+          box-shadow: 0 12px 40px rgba(0,0,0,.12) !important;
+          padding: 0 !important;
         }
-
-        /* SCHOOL MARKER ANIMATIONS & INTERACTION */
+        .kab-popup .leaflet-popup-content {
+          margin: 12px !important;
+        }
+        .kab-popup .leaflet-popup-tip-container { display: none !important; }
+        .sulteng-region {
+          transition: fill-opacity .2s !important;
+        }
         .school-marker-icon {
           cursor: pointer !important;
-          pointer-events: auto !important;
-        }
-        .school-marker-core {
-          transition: transform 0.2s ease-in-out, filter 0.2s !important;
-        }
-        .school-marker-icon:hover .school-marker-core {
-          transform: scale(1.35) !important;
-          filter: brightness(1.1) !important;
-          z-index: 1000 !important;
-        }
-
-        /* STATIC MARKER STYLE */
-        .marker-container {
-          position: relative;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .marker-core {
-          width: 16px;
-          height: 16px;
-          border-radius: 50%;
-          position: relative;
-          z-index: 2;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
       `}</style>
     </div>

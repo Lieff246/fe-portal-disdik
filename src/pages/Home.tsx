@@ -10,45 +10,47 @@ export const Home = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Ambil dari backend pemetaan (disdik-pemetaan Laravel)
-      const res = await PemetaanService.getLanding();
+      // Fetch landing + statistik kabupaten secara paralel
+      const [landingRes, statKabRes] = await Promise.all([
+        PemetaanService.getLanding(),
+        PemetaanService.getStatistikKabupaten(),
+      ]);
 
-      const summary    = res?.data?.summary;
-      const cards      = res?.data?.cards;
-      const neracaRekap = res?.data?.neracaRekap;
+      const summary      = landingRes?.data?.summary;
+      const cards        = landingRes?.data?.cards ?? [];
+      const neracaRekap  = landingRes?.data?.neracaRekap ?? [];
+      // Data statistik per kabupaten untuk marker peta
+      const kabupatenStats = statKabRes?.data ?? [];
 
       setPortalData({
-        // summary untuk GeneralDataSection
         summary: {
-          total_sekolah  : summary?.total_sekolah  ?? 0,
-          total_siswa    : summary?.total_siswa    ?? 0,
-          // Field berikut belum ada di backend (data GTK) — tampilkan 0 dulu
-          total_rombel   : 0,
-          total_guru     : 0,
-          total_tendik   : 0,
-          total_pegawai  : 0,
-          semester_id    : summary?.semester_id,
-          // mapMarkers dibuat dari cards kabupaten untuk peta
-          mapMarkers: (cards ?? []).map((c: any, idx: number) => ({
-            id   : idx + 1,
-            name : c.kabupaten,
-            lat  : 0,   // koordinat belum ada di endpoint landing — kosong dulu
-            lng  : 0,
-            stats: {
-              schools  : c.total_sekolah  ?? 0,
-              students : c.total_siswa    ?? 0,
-              teachers : 0,
-            },
-          })),
+          total_sekolah : summary?.total_sekolah ?? 0,
+          total_sd      : summary?.total_sd      ?? 0,
+          total_smp     : summary?.total_smp     ?? 0,
+          total_sma     : summary?.total_sma     ?? 0,
+          total_paud    : summary?.total_paud    ?? 0,
+          total_3t      : summary?.total_3t      ?? 0,
+          total_negeri  : summary?.total_negeri  ?? 0,
+          total_swasta  : summary?.total_swasta  ?? 0,
+          total_siswa   : summary?.total_siswa   ?? 0,
+          semester_id   : summary?.semester_id,
+          // Field GTK — belum ada, isi 0
+          total_rombel  : 0,
+          total_guru    : 0,
+          total_tendik  : 0,
+          total_pegawai : 0,
         },
 
-        // cards untuk PortalDataCards — merge dengan data kabupaten dari API
-        cards: cards ?? [],
+        // Statistik per kabupaten → dipakai marker peta
+        kabupatenStats,
 
-        // neracaRekap — dipakai oleh NeracaSidebar
-        neracaRekap: neracaRekap ?? [],
+        // Cards per kabupaten → dipakai PortalDataCards
+        cards,
 
-        // projections — belum ada endpoint, kirim null agar ProyeksiCard tidak crash
+        // Neraca rekap per jenjang
+        neracaRekap,
+
+        // Projections — belum ada endpoint, null agar ProyeksiCard tidak error
         projections: null,
       });
     } catch (error) {
@@ -58,9 +60,7 @@ export const Home = () => {
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  useEffect(() => { fetchData(); }, []);
 
   if (loading) {
     return (
