@@ -5,6 +5,8 @@ export interface AppConfig {
   SERVICE_SCHOOL: string;
   SERVICE_PPDB: string;
   SERVICE_BERANI_CERDAS: string;
+  SERVICE_REKAP: string;
+  SERVICE_OPENDATA: string;
   API_MESSAGE_URL: string;
 }
 
@@ -15,6 +17,7 @@ export const config = {
   SERVICE_SCHOOL: import.meta.env.VITE_API_SERVICE_SCHOOL,
   SERVICE_PPDB: import.meta.env.VITE_API_SERVICE_PPDB,
   SERVICE_BERANI_CERDAS: import.meta.env.VITE_API_SERVICE_BERANI_CERDAS,
+  SERVICE_REKAP: import.meta.env.VITE_API_SERVICE_REKAP,
   SERVICE_OPENDATA: import.meta.env.VITE_API_SERVICE_OPENDATA,
   API_MESSAGE_URL: import.meta.env.VITE_API_MESSAGE_URL,
 };

@@ -1,6 +1,7 @@
 import axios from 'axios';
+import { config } from '@/config';
 
-const API_REKAP_URL = import.meta.env.VITE_API_SERVICE_REKAP;
+const API_REKAP_URL = config.SERVICE_REKAP;
 
 // Helper to map backend neraca_rekap data structure to what NeracaSidebar expects
 const mapNeracaData = (raw: any) => {

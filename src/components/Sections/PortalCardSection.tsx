@@ -1,5 +1,5 @@
 import React, { useRef } from "react";
-import { ChevronRight, ChevronsUpDown } from "lucide-react";
+import { ChevronRight, ChevronsUpDown, School, Layers, Users } from "lucide-react";
 
 interface PortalDataCardsProps {
   cards?: any;
@@ -82,6 +82,7 @@ const REGION_DATA = [
     schools: 3000,
     rombel: 3000,
     students: 3000,
+    logo: "/images/kabupaten_kota.png/Kota Palu.png",
   },
   {
     id: 2,
@@ -90,6 +91,7 @@ const REGION_DATA = [
     schools: 3000,
     rombel: 3000,
     students: 3000,
+    logo: "/images/kabupaten_kota.png/Kabupaten Donggala.png",
   },
   {
     id: 3,
@@ -98,6 +100,7 @@ const REGION_DATA = [
     schools: 3000,
     rombel: 3000,
     students: 3000,
+    logo: "/images/kabupaten_kota.png/Kabupaten Sigi.png",
   },
   {
     id: 4,
@@ -106,6 +109,7 @@ const REGION_DATA = [
     schools: 3000,
     rombel: 3000,
     students: 3000,
+    logo: "/images/kabupaten_kota.png/Kabupaten Parigi Moutong.png",
   },
   {
     id: 5,
@@ -114,6 +118,7 @@ const REGION_DATA = [
     schools: 3000,
     rombel: 3000,
     students: 3000,
+    logo: "/images/kabupaten_kota.png/Kabupaten Poso.png",
   },
   {
     id: 6,
@@ -122,6 +127,7 @@ const REGION_DATA = [
     schools: 3000,
     rombel: 3000,
     students: 3000,
+    logo: "/images/kabupaten_kota.png/Kabupaten Tojo Una-Una.png",
   },
   {
     id: 7,
@@ -130,6 +136,7 @@ const REGION_DATA = [
     schools: 3000,
     rombel: 3000,
     students: 3000,
+    logo: "/images/kabupaten_kota.png/Kabupaten Morowali.png",
   },
   {
     id: 8,
@@ -138,6 +145,7 @@ const REGION_DATA = [
     schools: 3000,
     rombel: 3000,
     students: 3000,
+    logo: "/images/kabupaten_kota.png/Kabupaten Morowali Utara.png",
   },
   {
     id: 9,
@@ -146,6 +154,7 @@ const REGION_DATA = [
     schools: 3000,
     rombel: 3000,
     students: 3000,
+    logo: "/images/kabupaten_kota.png/Kabupaten Banggai.png",
   },
   {
     id: 10,
@@ -154,6 +163,7 @@ const REGION_DATA = [
     schools: 3000,
     rombel: 3000,
     students: 3000,
+    logo: "/images/kabupaten_kota.png/Kabupaten Banggai Kepulauan.png",
   },
   {
     id: 11,
@@ -162,6 +172,7 @@ const REGION_DATA = [
     schools: 3000,
     rombel: 3000,
     students: 3000,
+    logo: "/images/kabupaten_kota.png/Kabupaten Banggai Laut.png",
   },
   {
     id: 12,
@@ -170,6 +181,7 @@ const REGION_DATA = [
     schools: 3000,
     rombel: 3000,
     students: 3000,
+    logo: "/images/kabupaten_kota.png/Kabupaten Tolitoli.png",
   },
   {
     id: 13,
@@ -178,8 +190,23 @@ const REGION_DATA = [
     schools: 3000,
     rombel: 3000,
     students: 3000,
+    logo: "/images/kabupaten_kota.png/Kabupaten Buol.png",
   },
 ];
+
+const getRegionLogo = (region: any) => {
+  if (region.logo) {
+    return region.logo;
+  }
+
+  const isKota = region.name.includes("Kota");
+  const shortName = region.name
+    .replace(/Dinas Pendidikan (Kab\. |Kab\. |Kota )/, "")
+    .trim();
+
+  const prefix = isKota ? "Kota" : "Kabupaten";
+  return `/images/kabupaten_kota.png/${encodeURIComponent(`${prefix} ${shortName}`)}.png`;
+};
 
 export const PortalDataCards: React.FC<PortalDataCardsProps> = ({
   onViewRegionDetail,
@@ -187,13 +214,17 @@ export const PortalDataCards: React.FC<PortalDataCardsProps> = ({
   const scrollRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div className="glass !bg-[#F1F5F9]/90 rounded-[2.5rem] p-6 sm:p-7 flex flex-col h-[580px] relative overflow-hidden font-poppins shadow-xl border border-white/80">
+    <div className="relative flex h-[580px] flex-col overflow-hidden rounded-[2.5rem] border border-slate-200/80 bg-gradient-to-br from-white via-slate-50 to-blue-50/70 p-6 shadow-[0_35px_90px_-35px_rgba(15,23,42,0.35)] font-poppins sm:p-7">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(37,99,235,0.10),_transparent_40%)]" />
       {/* Outer Header Section */}
-      <div className="text-center flex flex-col items-center mb-4 px-1 shrink-0">
-        <h3 className="text-slate-900 font-extrabold text-lg sm:text-xl leading-tight tracking-tight">
+      <div className="mb-4 shrink-0 px-1 text-center">
+        <div className="mb-2 inline-flex rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-blue-600">
+          Wilayah
+        </div>
+        <h3 className="text-lg font-extrabold leading-tight tracking-tight text-slate-900 sm:text-xl">
           Portal Dinas Pendidikan
         </h3>
-        <p className="text-slate-700 font-medium text-sm sm:text-base leading-tight mt-0.5">
+        <p className="mt-0.5 text-sm font-medium leading-tight text-slate-700 sm:text-base">
           Kabupaten dan Kota Sulawesi Tengah
         </p>
       </div>
@@ -206,61 +237,73 @@ export const PortalDataCards: React.FC<PortalDataCardsProps> = ({
         {REGION_DATA.map((reg) => (
           <div
             key={reg.id}
-            className="bg-white rounded-[2rem] p-5 shadow-sm border border-slate-100 flex flex-col gap-4"
+            className="flex flex-col gap-4 rounded-[2rem] border border-slate-200/80 bg-gradient-to-br from-white via-slate-50 to-white p-5 shadow-[0_18px_50px_-24px_rgba(15,23,42,0.35)] transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_22px_55px_-24px_rgba(15,23,42,0.4)]"
           >
             {/* Card Header */}
-            <div className="flex items-center gap-3.5">
-              <RegencyCrestLogo name={reg.name} className="w-10 h-12 shrink-0 drop-shadow-sm" />
-              <h4 className="font-extrabold text-slate-900 text-base leading-tight">
-                {reg.name}
-              </h4>
+            <div className="flex flex-col items-center gap-3 text-center">
+              <div className="flex h-20 w-16 shrink-0 items-center justify-center overflow-hidden rounded-[1.75rem] border border-slate-200 bg-gradient-to-br from-white to-slate-100 shadow-sm">
+                {getRegionLogo(reg) ? (
+                  <img
+                    src={getRegionLogo(reg)}
+                    alt={`${reg.name} logo`}
+                    className="h-full w-auto object-contain"
+                  />
+                ) : (
+                  <RegencyCrestLogo name={reg.name} className="w-10 h-14" />
+                )}
+              </div>
+              <div className="min-w-0">
+                <span className="mb-2 inline-flex items-center rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.35em] text-blue-600">
+                  Kabupaten / Kota
+                </span>
+                <h4 className="font-extrabold text-slate-900 text-sm sm:text-base leading-tight">
+                  {reg.name}
+                </h4>
+              </div>
             </div>
 
-            {/* 3 Item Pills */}
-            <div className="w-full flex flex-col gap-3">
-              {/* Total Sekolah */}
-              <div className="bg-[#F3F4F6] hover:bg-slate-200/70 transition-colors rounded-2xl px-4 py-3 flex items-center justify-between">
-                <div className="flex items-center gap-3.5">
-                  <div className="w-10 h-10 rounded-2xl bg-[#DCFCE7] text-[#15803D] flex items-center justify-center shrink-0">
-                    <GraduationCapIcon className="w-5 h-5" />
-                  </div>
-                  <span className="font-bold text-sm text-slate-800 tracking-wide">
+            {/* 3 Stat Cards */}
+            <div className="flex flex-col gap-3">
+              <div className="flex items-start gap-3 rounded-[1.4rem] border border-emerald-100 bg-gradient-to-r from-emerald-50 via-white to-emerald-50 p-3 shadow-sm">
+                <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#DCFCE7] text-[#166534] shadow-inner shadow-green-100/60">
+                  <School className="w-5 h-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-400">
                     Total Sekolah
-                  </span>
+                  </p>
+                  <p className="mt-1 text-base font-extrabold text-slate-900">
+                    {reg.schools.toLocaleString()}
+                  </p>
                 </div>
-                <span className="font-extrabold text-sm text-slate-900">
-                  {reg.schools.toLocaleString()}
-                </span>
               </div>
 
-              {/* Total Rombel */}
-              <div className="bg-[#F3F4F6] hover:bg-slate-200/70 transition-colors rounded-2xl px-4 py-3 flex items-center justify-between">
-                <div className="flex items-center gap-3.5">
-                  <div className="w-10 h-10 rounded-2xl bg-[#DBEAFE] text-[#1D4ED8] flex items-center justify-center shrink-0">
-                    <GraduationCapIcon className="w-5 h-5" />
-                  </div>
-                  <span className="font-bold text-sm text-slate-800 tracking-wide">
+              <div className="flex items-start gap-3 rounded-[1.4rem] border border-sky-100 bg-gradient-to-r from-sky-50 via-white to-sky-50 p-3 shadow-sm">
+                <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#DBEAFE] text-[#1D4ED8] shadow-inner shadow-sky-100/60">
+                  <Layers className="w-5 h-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-400">
                     Total Rombel
-                  </span>
+                  </p>
+                  <p className="mt-1 text-base font-extrabold text-slate-900">
+                    {reg.rombel.toLocaleString()}
+                  </p>
                 </div>
-                <span className="font-extrabold text-sm text-slate-900">
-                  {reg.rombel.toLocaleString()}
-                </span>
               </div>
 
-              {/* Total Siswa */}
-              <div className="bg-[#F3F4F6] hover:bg-slate-200/70 transition-colors rounded-2xl px-4 py-3 flex items-center justify-between">
-                <div className="flex items-center gap-3.5">
-                  <div className="w-10 h-10 rounded-2xl bg-[#FEF9C3] text-[#A16207] flex items-center justify-center shrink-0">
-                    <GraduationCapIcon className="w-5 h-5" />
-                  </div>
-                  <span className="font-bold text-sm text-slate-800 tracking-wide">
-                    Total Siswa
-                  </span>
+              <div className="flex items-start gap-3 rounded-[1.4rem] border border-amber-100 bg-gradient-to-r from-amber-50 via-white to-amber-50 p-3 shadow-sm">
+                <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#FEF3C7] text-[#92400E] shadow-inner shadow-amber-100/60">
+                  <Users className="w-5 h-5" />
                 </div>
-                <span className="font-extrabold text-sm text-slate-900">
-                  {reg.students.toLocaleString()}
-                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-400">
+                    Total Siswa
+                  </p>
+                  <p className="mt-1 text-base font-extrabold text-slate-900">
+                    {reg.students.toLocaleString()}
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -273,7 +316,7 @@ export const PortalDataCards: React.FC<PortalDataCardsProps> = ({
                   window.location.href = `/${reg.slug}?name=${encodeURIComponent(reg.name)}`;
                 }
               }}
-              className="w-full bg-[#2563EB] hover:bg-[#1D4ED8] active:scale-95 text-white font-bold py-3 px-6 rounded-full flex items-center justify-center gap-2 transition-all shadow-md shadow-blue-500/25 text-sm cursor-pointer mt-1"
+              className="mt-1 flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-blue-500/25 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-blue-500/30 active:scale-95"
             >
               <span>Kunjungi</span>
               <ChevronRight className="w-4 h-4 stroke-[3]" />

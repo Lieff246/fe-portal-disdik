@@ -1,5 +1,5 @@
 # Build Output
-# dist/
+dist/
 
 # Environment Files
 .env
@@ -31,4 +31,7 @@ node_modules/
 *.njsproj
 *.sln
 *.sw?
+
+# Vite
 vite.config.ts.timestamp-*
+vite.config.backup.ts
