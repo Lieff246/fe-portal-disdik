@@ -30,7 +30,6 @@ export const HeroSection: React.FC<HeroProps> = ({
 
   const totalSubmitted = rekapStatus?.sk_terbit || 0;
   const totalTarget = rekapStatus?.total || 0;
-  // console.log(totalSubmitted);
 
   // Data untuk Recharts: Indeks 0 (Hijau), Indeks 1 (Abu-abu sisa)
   const chartData = [
@@ -78,7 +77,6 @@ export const HeroSection: React.FC<HeroProps> = ({
                         cornerRadius={40}
                       >
                         {chartData.map((entry, index) => {
-                          console.log(entry);
                           return (
                             <Cell
                               key={`cell-${index}`}

@@ -32,8 +32,6 @@ export const GtkDetailSidebar: React.FC<GtkDetailSidebarProps> = ({
   const [maxVal, setMaxVal] = useState<{ kurang: number; lebih: number }>({
     kurang: 1,
     lebih: 1,
-  });
-  console.log(pagination);
   const [loading, setLoading] = useState(true);
   const [selectedSchool, setSelectedSchool] = useState<any>(null);
   const [filters, setFilters] = useState({
@@ -343,7 +341,6 @@ export const GtkDetailSidebar: React.FC<GtkDetailSidebarProps> = ({
             </div>
             <div className="flex-1 overflow-y-auto p-8 space-y-4">
               {selectedSchool.details?.map((d: any, i: number) => {
-                console.log(d);
                 return (
                   <div
                     key={i}

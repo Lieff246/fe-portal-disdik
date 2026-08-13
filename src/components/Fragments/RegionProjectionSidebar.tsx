@@ -71,7 +71,7 @@ export const RegionProjectionSidebar: React.FC<
     const [localRange, setLocalRange] = useState<"monthly" | "yearly">("monthly");
     const [schoolSearch, setSchoolSearch] = useState("");
     const markerRefs = React.useRef<Record<string, L.Marker>>({});
-    console.log(onMonthChange);
+
     useEffect(() => {
       setLocalMonth(currentMonth);
     }, [currentMonth]);

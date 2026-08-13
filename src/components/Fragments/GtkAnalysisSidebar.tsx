@@ -179,9 +179,9 @@ export const GtkAnalysisSidebar: React.FC<GtkAnalysisSidebarProps> = ({
                   </div>
                   <div className="col-span-3 text-xs font-bold text-slate-500 uppercase tracking-tight">
                     {item.jabatan || (
-                      <button className="text-primary hover:underline" onClick={() => console.log('detail mapel', item.details)}>
+                      <span className="text-primary">
                         {item.details?.length} Mapel Terkait
-                      </button>
+                      </span>
                     )}
                   </div>
                   <div className="col-span-3 flex justify-end">

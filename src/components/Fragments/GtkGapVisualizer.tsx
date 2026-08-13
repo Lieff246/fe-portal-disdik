@@ -21,7 +21,6 @@ export const GtkGapVisualizer: React.FC<GtkGapVisualizerProps> = ({
   eksisting,
   maxVal,
 }) => {
-  console.log(ideal);
   const isDeficit = kurang > 0;
   const isSurplus = lebih > 0;
   const isIdeal = !isDeficit && !isSurplus;
