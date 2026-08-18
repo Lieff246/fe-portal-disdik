@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from "react";
-import { ChevronRight, ChevronsUpDown, School, Layers, Users } from "lucide-react";
+import { ChevronRight, ChevronsUpDown, School, Layers } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { PemetaanService } from "@/services/pemetaanService";
 
@@ -196,15 +196,40 @@ export const PortalDataCards: React.FC<PortalDataCardsProps> = ({
 
             {/* Stat cards */}
             <div className="flex flex-col gap-3">
-              <div className="flex items-start gap-3 rounded-[1.4rem] border border-emerald-100 bg-gradient-to-r from-emerald-50 via-white to-emerald-50 p-3 shadow-sm">
-                <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#DCFCE7] text-[#166534] shadow-inner">
-                  <School className="w-5 h-5" />
+
+              {/* Wewenang kabupaten: PAUD–SMP */}
+              <div className="flex flex-col gap-2 rounded-[1.4rem] border border-emerald-100 bg-gradient-to-r from-emerald-50 via-white to-emerald-50 p-3 shadow-sm">
+                <div className="flex items-start gap-3">
+                  <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#DCFCE7] text-[#166534] shadow-inner">
+                    <School className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-400">
+                      PAUD – SMP
+                    </p>
+                    <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-wide">
+                      Kewenangan Kabupaten/Kota
+                    </p>
+                    <p className="mt-1 text-base font-extrabold text-slate-900">
+                      {(item.total_paud_smp ?? 0).toLocaleString("id-ID")}
+                      <span className="text-slate-400 font-medium text-xs ml-1">sekolah</span>
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-400">Total Sekolah</p>
-                  <p className="mt-1 text-base font-extrabold text-slate-900">
-                    {(item.total_sekolah ?? 0).toLocaleString("id-ID")}
-                  </p>
+                {/* Breakdown kecil */}
+                <div className="flex gap-2 pl-1">
+                  <span className="flex-1 text-center rounded-xl bg-yellow-50 border border-yellow-100 py-1 text-[9px] font-black text-yellow-700">
+                    PAUD<br />
+                    <span className="text-[11px]">{(item.total_paud ?? 0).toLocaleString("id-ID")}</span>
+                  </span>
+                  <span className="flex-1 text-center rounded-xl bg-emerald-50 border border-emerald-100 py-1 text-[9px] font-black text-emerald-700">
+                    SD/MI<br />
+                    <span className="text-[11px]">{(item.total_sd ?? 0).toLocaleString("id-ID")}</span>
+                  </span>
+                  <span className="flex-1 text-center rounded-xl bg-blue-50 border border-blue-100 py-1 text-[9px] font-black text-blue-700">
+                    SMP/MTs<br />
+                    <span className="text-[11px]">{(item.total_smp ?? 0).toLocaleString("id-ID")}</span>
+                  </span>
                 </div>
               </div>
 
@@ -222,27 +247,25 @@ export const PortalDataCards: React.FC<PortalDataCardsProps> = ({
                 </div>
               </div>
 
-              <div className="flex items-start gap-3 rounded-[1.4rem] border border-amber-100 bg-gradient-to-r from-amber-50 via-white to-amber-50 p-3 shadow-sm">
-                <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#FEF3C7] text-[#92400E] shadow-inner">
-                  <Users className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-400">Total Siswa</p>
-                  <p className="mt-1 text-base font-extrabold text-slate-900">
-                    {(item.total_siswa ?? 0).toLocaleString("id-ID")}
-                  </p>
-                </div>
-              </div>
             </div>
 
             {/* Tombol navigasi */}
-            <button
-              onClick={() => handleKunjungi(item)}
-              className="mt-1 flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-blue-500/25 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl active:scale-95"
-            >
-              <span>Kunjungi</span>
-              <ChevronRight className="w-4 h-4 stroke-[3]" />
-            </button>
+            <div className="mt-1 flex gap-2">
+              <button
+                onClick={() => navigate(`/kabupaten/${item.kode_kabupaten}`)}
+                className="flex-1 flex items-center justify-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-4 py-2.5 text-xs font-bold text-blue-700 transition-all hover:bg-blue-100 active:scale-95"
+              >
+                <School className="w-3.5 h-3.5" />
+                <span>Peta Sekolah</span>
+              </button>
+              <button
+                onClick={() => handleKunjungi(item)}
+                className="flex-1 flex items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600 px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-blue-500/25 transition-all hover:-translate-y-0.5 hover:shadow-xl active:scale-95"
+              >
+                <span>Portal Dinas</span>
+                <ChevronRight className="w-3.5 h-3.5 stroke-[3]" />
+              </button>
+            </div>
           </div>
         ))}
       </div>
