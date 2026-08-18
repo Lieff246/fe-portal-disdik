@@ -5,6 +5,7 @@ import { SchoolLanding } from '@/pages/SchoolLanding';
 import { SchoolLandingSekolahku } from '@/pages/SchoolLandingSekolahku';
 import { SchoolLandingV3 } from '@/pages/SchoolLandingV3';
 import { KabupatenDetail } from '@/pages/KabupatenDetail';
+import { SekolahDetail } from '@/pages/SekolahDetail';
 
 const landingRoutes = [
   {
@@ -40,12 +41,12 @@ const landingRoutes = [
     element: <KabupatenDetail />,
   },
   {
-    path: 'about',
-    element: <About />,
+    path: 'sekolah/:npsn',
+    element: <SekolahDetail />,
   },
   {
-    path: 'sekolah/:id',
-    element: <SchoolLanding />,
+    path: 'about',
+    element: <About />,
   },
   {
     path: 'sekolah2/:id',

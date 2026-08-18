@@ -256,9 +256,14 @@ export const KabupatenDetail = () => {
   };
 
   const kecamatanList = Object.keys(kecamatanColorMap);
-  const filteredSchools = sekolahList.filter((s) =>
-    s.nama?.toLowerCase().includes(schoolSearch.toLowerCase())
-  );
+  const filteredSchools = selectedSchool
+    ? sekolahList.filter((s) =>
+        s.npsn === selectedSchool.npsn ||
+        (!s.npsn && s.nama === selectedSchool.nama)
+      )
+    : sekolahList.filter((s) =>
+        s.nama?.toLowerCase().includes(schoolSearch.toLowerCase())
+      );
 
   return (
     <div className="w-screen font-poppins bg-slate-50/20 overflow-x-hidden">
@@ -331,7 +336,10 @@ export const KabupatenDetail = () => {
                   key={`${uniqueKey}-${hoveredJenjang ?? "none"}`}
                   position={[lat, lng]}
                   icon={icon}
-                  eventHandlers={{ click: () => setSelectedSchool(school) }}
+                  eventHandlers={{ click: () => {
+                    setSelectedSchool(school);
+                    setSchoolSearch(""); // clear search saat marker diklik
+                  }}}
                 >
                   <Tooltip direction="top" offset={[0, -6]} opacity={1}>
                     <span className="text-[10px] font-bold text-slate-800 whitespace-nowrap">
@@ -495,17 +503,36 @@ export const KabupatenDetail = () => {
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-300 group-focus-within:text-blue-500 transition-colors" />
             <input
               type="text"
-              placeholder="Cari sekolah..."
-              value={schoolSearch}
+              placeholder={selectedSchool ? "Klik '← Lihat Semua' untuk cari..." : "Cari sekolah..."}
+              value={selectedSchool ? "" : schoolSearch}
+              disabled={!!selectedSchool}
               onChange={(e) => setSchoolSearch(e.target.value)}
-              className="w-full bg-white/90 backdrop-blur-sm border border-white/80 rounded-2xl py-2.5 pl-10 pr-4 text-xs font-semibold placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:bg-white transition-all shadow-md"
+              className={`w-full bg-white/90 backdrop-blur-sm border border-white/80 rounded-2xl py-2.5 pl-10 pr-4 text-xs font-semibold placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:bg-white transition-all shadow-md ${
+                selectedSchool ? "opacity-50 cursor-not-allowed" : ""
+              }`}
             />
           </div>
 
-          {/* Counter */}
+          {/* Counter + tombol reset */}
           {!loading && !error && (
-            <div className="text-[11px] text-slate-400 font-semibold px-1 shrink-0">
-              {filteredSchools.length} dari {sekolahList.length} sekolah
+            <div className="flex items-center justify-between px-1 shrink-0">
+              <div className="text-[11px] text-slate-400 font-semibold">
+                {selectedSchool
+                  ? <span className="text-blue-600 font-bold">1 sekolah dipilih</span>
+                  : <span>{filteredSchools.length} dari {sekolahList.length} sekolah</span>
+                }
+              </div>
+              {selectedSchool && (
+                <button
+                  onClick={() => {
+                    setSelectedSchool(null);
+                    setSchoolSearch("");
+                  }}
+                  className="text-[10px] font-black text-blue-600 hover:text-blue-800 uppercase tracking-wider transition-colors"
+                >
+                  ← Lihat Semua
+                </button>
+              )}
             </div>
           )}
           {loading && (
