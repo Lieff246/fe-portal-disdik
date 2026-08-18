@@ -14,6 +14,8 @@ export const AdminSection: React.FC = () => {
       setIsLoading(true);
       try {
         const response = await LandingService.getAdmins();
+        console.log("tes");
+        console.log(response);
         setAdmins([]);
       } catch (error) {
         console.error(error);

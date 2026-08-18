@@ -7,6 +7,7 @@ interface Props {
 }
 
 export const RecapSection: React.FC<Props> = ({ landingData }) => {
+  // console.log(landingData);
   const summary = landingData?.summary;
 
   const stats = [

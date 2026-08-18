@@ -17,12 +17,13 @@ export const PemetaanService = {
 
   /**
    * List sekolah untuk marker peta (max 5000 record).
-   * @param params - Filter opsional: jenjang, kode_kabupaten, is_3t
+   * @param params - Filter opsional: jenjang, kode_kabupaten, is_3t, search
    */
   getSekolah: (params?: {
     jenjang?: string;
     kode_kabupaten?: string;
     is_3t?: boolean;
+    search?: string;
   }): Promise<SekolahListResponse> =>
     api_pemetaan.get("/v1/sekolah", { params }),
 

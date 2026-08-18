@@ -6,6 +6,7 @@ export const Header: React.FC<{
   cabangConfig?: CabangConfig;
   onOpenTracking?: () => void;
 }> = ({ cabangConfig, onOpenTracking }) => {
+  console.log(cabangConfig);
   return (
     <header className="bg-white absolute top-0 left-0 right-0 z-50 py-4 border-b border-gray-100">
       <div className="container mx-auto px-10 flex justify-between items-center">

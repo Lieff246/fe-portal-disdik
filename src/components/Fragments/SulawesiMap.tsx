@@ -316,8 +316,8 @@ export const SulawesiMap: React.FC<MapProps> = ({
     setHoveredKode(kode);
   }, []);
 
-  const navigateToCabdis = (slug: string, nama: string) => {
-    navigate(`/${slug}?name=${encodeURIComponent(nama)}`);
+  const navigateToKabupaten = (kode: string) => {
+    navigate(`/kabupaten/${kode}`);
   };
 
   const handlePopupClose = useCallback(() => {
@@ -489,7 +489,7 @@ export const SulawesiMap: React.FC<MapProps> = ({
 
                   {/* CTA */}
                   <button
-                    onClick={() => navigateToCabdis(activeKabData.slug, activeKabData.nama)}
+                    onClick={() => navigateToKabupaten(activeKode)}
                     className="w-full py-2.5 rounded-xl text-white text-xs font-black uppercase tracking-wider shadow-md transition-all hover:-translate-y-0.5 active:scale-95 flex items-center justify-center gap-2"
                     style={{ background: `linear-gradient(135deg, ${activeColor}, ${activeColor}cc)` }}
                   >

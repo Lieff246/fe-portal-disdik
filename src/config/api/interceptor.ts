@@ -31,13 +31,17 @@ export const onResponse = (response: AxiosResponse): any => {
 
 export const onResponseError = (error: any): Promise<any> => {
   localStorage.removeItem("error501");
-
+  console.log(error);
+  console.log(error.config.baseURL + error.config.url);
+  console.log(error.response);
   if (error.response.status === 401) {
     clearAccessTokenCookie();
     // window.location.pathname = "/login";
   } else if (error.response.status === 501) {
+    console.log(error.response);
     const error_data = error.response.data;
     localStorage.setItem("error501", error_data);
+    // console.log(error);
     // window.location.pathname = "/error-page";
   } else if (error.response.status === 502) {
     const error_data = error.response.data;
@@ -53,6 +57,8 @@ export const onResponseError = (error: any): Promise<any> => {
     }
   } else if (error.response.status === 500) {
     const error_data = JSON.stringify(error.response.data.message);
+    console.log("Tesss");
+    console.log(error.response.data);
     localStorage.setItem("error501", error_data);
     // window.location.pathname = "/error-page";
   }
