@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from "react";
-import { ChevronRight, ChevronsUpDown, School, Layers } from "lucide-react";
+import { ChevronRight, ChevronsUpDown, Layers, School } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { PemetaanService } from "@/services/pemetaanService";
 
@@ -250,22 +250,13 @@ export const PortalDataCards: React.FC<PortalDataCardsProps> = ({
             </div>
 
             {/* Tombol navigasi */}
-            <div className="mt-1 flex gap-2">
-              <button
-                onClick={() => navigate(`/kabupaten/${item.kode_kabupaten}`)}
-                className="flex-1 flex items-center justify-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-4 py-2.5 text-xs font-bold text-blue-700 transition-all hover:bg-blue-100 active:scale-95"
-              >
-                <School className="w-3.5 h-3.5" />
-                <span>Peta Sekolah</span>
-              </button>
-              <button
-                onClick={() => handleKunjungi(item)}
-                className="flex-1 flex items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600 px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-blue-500/25 transition-all hover:-translate-y-0.5 hover:shadow-xl active:scale-95"
-              >
-                <span>Portal Dinas</span>
-                <ChevronRight className="w-3.5 h-3.5 stroke-[3]" />
-              </button>
-            </div>
+            <button
+              onClick={() => navigate(`/kabupaten/${item.kode_kabupaten}`)}
+              className="mt-1 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-blue-500/25 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl active:scale-95"
+            >
+              <span>Kunjungi</span>
+              <ChevronRight className="w-4 h-4 stroke-[3]" />
+            </button>
           </div>
         ))}
       </div>
