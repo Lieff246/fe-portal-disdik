@@ -4,28 +4,9 @@ import { ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface ProyeksiCardProps {
-  smaProvinsiStats?: any[]; // Data SMA/SMK/SLB dari tabel school_sma (kewenangan Provinsi)
+  smaProvinsiStats?: any[];
   isLoading?: boolean;
 }
-
-// Logo Sulawesi Tengah
-const SultengCrestLogo: React.FC<{ className?: string }> = ({ className = "w-12 h-14" }) => (
-  <img
-    src="/images/kabupaten_kota.png/Sulawesi Tengah.png"
-    alt="Logo Provinsi Sulawesi Tengah"
-    className={`${className} object-contain`}
-    onError={(e) => {
-      (e.currentTarget as HTMLImageElement).src = "/logo.png";
-    }}
-  />
-);
-
-// Icon sekolah SVG
-const SchoolIcon: React.FC<{ className?: string }> = ({ className = "w-5 h-5" }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M12 3L2 9V11H4V20H10V14H14V20H20V11H22V9L12 3ZM12 5.5L18 9.1V10H6V9.1L12 5.5ZM8 12H10V14H8V12ZM14 12H16V14H14V12ZM8 16H10V18H8V16ZM14 16H16V18H14V16Z" />
-  </svg>
-);
 
 const JENJANG_CONFIG = [
   {
@@ -37,9 +18,22 @@ const JENJANG_CONFIG = [
     borderClass: "border-emerald-100",
     iconBg: "#DCFCE7",
     iconColor: "#15803D",
+    dot: "bg-emerald-500",
     pillBg: "bg-emerald-50",
     pillText: "text-emerald-700",
-    dot: "bg-emerald-500",
+  },
+  {
+    key: "MA",
+    label: "MA",
+    sublabel: "Madrasah Aliyah",
+    color: "#6366F1",
+    bgClass: "from-indigo-50 via-white to-indigo-50",
+    borderClass: "border-indigo-100",
+    iconBg: "#E0E7FF",
+    iconColor: "#4338CA",
+    dot: "bg-indigo-500",
+    pillBg: "bg-indigo-50",
+    pillText: "text-indigo-700",
   },
   {
     key: "SMK",
@@ -50,9 +44,9 @@ const JENJANG_CONFIG = [
     borderClass: "border-sky-100",
     iconBg: "#DBEAFE",
     iconColor: "#1D4ED8",
+    dot: "bg-sky-500",
     pillBg: "bg-sky-50",
     pillText: "text-sky-700",
-    dot: "bg-sky-500",
   },
   {
     key: "SLB",
@@ -63,18 +57,38 @@ const JENJANG_CONFIG = [
     borderClass: "border-amber-100",
     iconBg: "#FEF9C3",
     iconColor: "#A16207",
+    dot: "bg-amber-500",
     pillBg: "bg-amber-50",
     pillText: "text-amber-700",
-    dot: "bg-amber-500",
+  },
+  {
+    key: "SMTK",
+    label: "SMTK",
+    sublabel: "Menengah Teologi Kristen",
+    color: "#EC4899",
+    bgClass: "from-pink-50 via-white to-pink-50",
+    borderClass: "border-pink-100",
+    iconBg: "#FCE7F3",
+    iconColor: "#BE185D",
+    dot: "bg-pink-500",
+    pillBg: "bg-pink-50",
+    pillText: "text-pink-700",
   },
 ];
+
+// Icon sekolah SVG
+const SchoolIcon: React.FC<{ className?: string }> = ({ className = "w-5 h-5" }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 3L2 9V11H4V20H10V14H14V20H20V11H22V9L12 3ZM12 5.5L18 9.1V10H6V9.1L12 5.5ZM8 12H10V14H8V12ZM14 12H16V14H14V12ZM8 16H10V18H8V16ZM14 16H16V18H14V16Z" />
+  </svg>
+);
 
 export const ProyeksiCard: React.FC<ProyeksiCardProps> = ({
   smaProvinsiStats,
   isLoading: externalLoading,
 }) => {
   const navigate = useNavigate();
-  const [localData, setLocalData] = useState<Record<string, any>>({});
+  const [jenjangData, setJenjangData] = useState<Record<string, any>>({});
 
   useEffect(() => {
     if (smaProvinsiStats && smaProvinsiStats.length > 0) {
@@ -82,19 +96,19 @@ export const ProyeksiCard: React.FC<ProyeksiCardProps> = ({
       smaProvinsiStats.forEach((item: any) => {
         map[item.bentuk_pendidikan] = item;
       });
-      setLocalData(map);
+      setJenjangData(map);
     }
   }, [smaProvinsiStats]);
-
-  const jenjangData = localData;
-  const isLoadingState = externalLoading;
-  const loading = false;
 
   const handleKunjungi = () => {
     navigate("/?jenjang=sma");
   };
 
-  const chartData = JENJANG_CONFIG.map((j) => ({
+  const activeJenjang = JENJANG_CONFIG.filter(
+    (j) => Number(jenjangData[j.key]?.total ?? 0) > 0
+  );
+
+  const chartData = activeJenjang.map((j) => ({
     name: j.key,
     value: Number(jenjangData[j.key]?.total ?? 0),
     color: j.color,
@@ -103,58 +117,54 @@ export const ProyeksiCard: React.FC<ProyeksiCardProps> = ({
   const totalSekolah = chartData.reduce((sum, d) => sum + d.value, 0);
 
   return (
-    <div
-      className="relative flex flex-col overflow-hidden rounded-[2.5rem] border border-slate-200/80 bg-gradient-to-br from-white via-slate-50 to-blue-50/70 p-6 shadow-[0_35px_90px_-35px_rgba(15,23,42,0.35)] sm:p-7 font-poppins"
-      style={{ height: "680px" }}
-    >
-      {/* Background gradient accent */}
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.10),_transparent_42%),radial-gradient(circle_at_bottom_right,_rgba(16,185,129,0.08),_transparent_38%)]" />
+    <div className="relative flex h-[860px] flex-col overflow-hidden rounded-[2.5rem] border border-slate-200/80 bg-gradient-to-br from-white via-slate-50 to-purple-50/40 p-6 shadow-[0_35px_90px_-35px_rgba(15,23,42,0.35)] font-poppins sm:p-7">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(139,92,246,0.08),_transparent_40%)]" />
 
       {/* Loading overlay */}
-      {isLoadingState && (
-        <div className="absolute inset-0 bg-white/50 backdrop-blur-md z-50 flex items-center justify-center rounded-[2.5rem] animate-pulse">
-          <div className="flex flex-col items-center gap-4">
-            <div className="w-10 h-10 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
-            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-              Memuat...
-            </span>
-          </div>
+      {externalLoading && (
+        <div className="absolute inset-0 bg-white/50 backdrop-blur-md z-50 flex items-center justify-center rounded-[2.5rem]">
+          <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
         </div>
       )}
 
-      {/* ── Header: Logo & Nama Instansi ── */}
-      <div className="mb-4 flex items-center gap-3 rounded-[1.5rem] border border-white/80 bg-white/80 p-3 shadow-[0_10px_30px_-18px_rgba(15,23,42,0.35)] backdrop-blur-sm shrink-0">
-        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[1.2rem] border border-slate-200 bg-gradient-to-br from-white to-slate-100 shadow-sm">
-          <SultengCrestLogo className="h-12 w-12 drop-shadow-sm" />
+      {/* ── Header — center, identik dengan card kabupaten ── */}
+      <div className="mb-4 shrink-0 px-1 text-center">
+        <div className="mb-2 inline-flex rounded-full border border-purple-100 bg-purple-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-purple-600">
+          Provinsi
         </div>
-        <div className="flex flex-col min-w-0">
-          <span className="text-[9px] font-semibold uppercase tracking-[0.3em] text-blue-600 truncate">
-            Provinsi Sulawesi Tengah
-          </span>
-          <h3 className="text-sm font-extrabold leading-tight tracking-tight text-slate-900">
-            Dinas Pendidikan
-          </h3>
-          <p className="text-[11px] font-medium text-slate-500 mt-0.5">
-            Pengelola SMA, SMK & SLB
-          </p>
-        </div>
+        <h3 className="text-lg font-extrabold leading-tight tracking-tight text-slate-900 sm:text-xl">
+          Portal Dinas Pendidikan
+        </h3>
+        <p className="mt-0.5 text-sm font-medium leading-tight text-slate-700">
+          Provinsi Sulawesi Tengah
+        </p>
       </div>
 
       {/* ── Inner Card ── */}
       <div className="flex flex-1 flex-col justify-between gap-3 rounded-[2rem] border border-slate-200/80 bg-gradient-to-br from-white via-slate-50 to-white p-5 shadow-[0_18px_50px_-24px_rgba(15,23,42,0.25)] min-h-0">
 
-        {/* Judul */}
-        <div className="text-center shrink-0">
-          <div className="mb-1.5 inline-flex rounded-full border border-blue-100 bg-blue-50 px-3 py-0.5 text-[9px] font-semibold uppercase tracking-[0.3em] text-blue-600">
-            Ringkasan Data Provinsi
+        {/* Logo + Identitas — menggantikan badge "Ringkasan Data Provinsi" */}
+        <div className="flex flex-col items-center gap-2 text-center shrink-0">
+          <div className="flex h-20 w-16 items-center justify-center overflow-hidden rounded-[1.75rem] border border-slate-200 bg-gradient-to-br from-white to-slate-100 shadow-sm">
+            <img
+              src="/images/kabupaten_kota.png/Sulawesi Tengah.png"
+              alt="Logo Provinsi Sulawesi Tengah"
+              className="h-full w-auto object-contain p-1"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = "/logo.png";
+              }}
+            />
           </div>
-          <h4 className="text-sm font-extrabold text-slate-900">Pengelolaan SMA Sederajat</h4>
-          <p className="text-[11px] text-slate-500 font-medium mt-0.5">Seluruh Sulawesi Tengah</p>
+          <div>
+            <h4 className="mt-1 font-extrabold text-slate-900 text-sm leading-tight">
+              Dinas Pendidikan Prov. Sulawesi Tengah
+            </h4>
+          </div>
         </div>
 
-        {/* ── List Jenjang ── */}
+        {/* ── List Jenjang — tidak scroll, semua tampil ── */}
         <div className="flex flex-col gap-2 shrink-0">
-          {JENJANG_CONFIG.map((j) => {
+          {activeJenjang.map((j) => {
             const stat = jenjangData[j.key];
             const total = Number(stat?.total ?? 0);
             const negeri = Number(stat?.total_negeri ?? 0);
@@ -166,20 +176,20 @@ export const ProyeksiCard: React.FC<ProyeksiCardProps> = ({
               >
                 <div className="flex items-center gap-2.5">
                   <div
-                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
                     style={{ background: j.iconBg, color: j.iconColor }}
                   >
                     <SchoolIcon className="w-4 h-4" />
                   </div>
                   <div>
-                    <span className="text-sm font-extrabold tracking-wide text-slate-800">{j.label}</span>
+                    <p className="text-sm font-extrabold tracking-wide text-slate-800">{j.label}</p>
                     <p className="text-[9px] text-slate-400 font-medium leading-none mt-0.5">
                       {negeri}N / {swasta}S
                     </p>
                   </div>
                 </div>
-                <span className="rounded-full bg-white/80 px-2.5 py-1 text-sm font-extrabold text-slate-900 shadow-sm">
-                  {loading ? "…" : total.toLocaleString("id-ID")}
+                <span className="rounded-full bg-white/80 px-3 py-1 text-sm font-extrabold text-slate-900 shadow-sm border border-slate-100">
+                  {total.toLocaleString("id-ID")}
                 </span>
               </div>
             );
@@ -188,47 +198,51 @@ export const ProyeksiCard: React.FC<ProyeksiCardProps> = ({
 
         {/* ── Donut Chart ── */}
         <div className="relative flex flex-col items-center justify-center shrink-0">
-          <div className="relative flex h-[140px] w-[140px] items-center justify-center rounded-full bg-gradient-to-br from-slate-100 via-white to-slate-50 p-2 shadow-[inset_0_8px_16px_rgba(15,23,42,0.08)] ring-1 ring-slate-200/80">
-            <div className="absolute inset-3 rounded-full bg-white/90 shadow-sm" />
-            <div className="relative z-10 flex h-full w-full items-center justify-center">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={chartData.length > 0 && totalSekolah > 0 ? chartData : [{ name: "kosong", value: 1, color: "#e2e8f0" }]}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={38}
-                    outerRadius={60}
-                    dataKey="value"
-                    stroke="none"
-                    startAngle={90}
-                    endAngle={-270}
-                  >
-                    {(chartData.length > 0 && totalSekolah > 0 ? chartData : [{ color: "#e2e8f0" }]).map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
+          <div className="relative flex h-[130px] w-[130px] items-center justify-center">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={
+                    chartData.length > 0 && totalSekolah > 0
+                      ? chartData
+                      : [{ name: "kosong", value: 1, color: "#e2e8f0" }]
+                  }
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={36}
+                  outerRadius={58}
+                  dataKey="value"
+                  stroke="none"
+                  startAngle={90}
+                  endAngle={-270}
+                >
+                  {(chartData.length > 0 && totalSekolah > 0
+                    ? chartData
+                    : [{ color: "#e2e8f0" }]
+                  ).map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+              </PieChart>
+            </ResponsiveContainer>
             {/* Center label */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="rounded-full bg-white px-3 py-2 text-center shadow-md ring-1 ring-slate-100">
-                <p className="text-[8px] font-semibold uppercase tracking-[0.25em] text-slate-400">Total</p>
-                <p className="text-base font-black text-slate-900">{loading ? "…" : totalSekolah}</p>
-                <p className="text-[8px] font-medium text-slate-500">Sekolah</p>
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="text-center">
+                <p className="text-[8px] font-semibold uppercase tracking-[0.2em] text-slate-400">Total</p>
+                <p className="text-lg font-black text-slate-900 leading-none">{totalSekolah}</p>
+                <p className="text-[8px] font-medium text-slate-400">Sekolah</p>
               </div>
             </div>
           </div>
 
-          {/* Legend */}
-          <div className="mt-2.5 flex flex-wrap items-center justify-center gap-1.5">
-            {JENJANG_CONFIG.map((j) => (
+          {/* Chart legend pills */}
+          <div className="mt-2 flex flex-wrap items-center justify-center gap-1.5">
+            {activeJenjang.map((j) => (
               <div
                 key={j.key}
-                className={`flex items-center gap-1.5 rounded-full ${j.pillBg} px-2.5 py-1 text-[10px] font-semibold ${j.pillText}`}
+                className={`flex items-center gap-1 rounded-full ${j.pillBg} px-2 py-0.5 text-[9px] font-semibold ${j.pillText}`}
               >
-                <span className={`h-2 w-2 rounded-full ${j.dot}`} />
+                <span className={`h-1.5 w-1.5 rounded-full ${j.dot}`} />
                 {j.label}
               </div>
             ))}
@@ -238,10 +252,10 @@ export const ProyeksiCard: React.FC<ProyeksiCardProps> = ({
         {/* ── CTA Button ── */}
         <button
           onClick={handleKunjungi}
-          className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600 py-2.5 text-xs font-bold text-white shadow-lg shadow-blue-500/25 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-blue-500/30 active:scale-95 shrink-0"
+          className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600 py-3 text-sm font-bold text-white shadow-lg shadow-blue-500/25 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl active:scale-95 shrink-0"
         >
           <span>Kunjungi</span>
-          <ChevronRight className="w-3.5 h-3.5 stroke-[3]" />
+          <ChevronRight className="w-4 h-4 stroke-[3]" />
         </button>
       </div>
     </div>

@@ -88,7 +88,7 @@ export const PortalHeroSection: React.FC<Props> = ({
       {/* ═══════════════════════════════════════════════════════════════════
           LAYER 3 — Card Kiri (Floating, z-30, tidak menutupi peta)
       ════════════════════════════════════════════════════════════════════ */}
-      <div className="absolute left-6 top-24 z-30 w-[280px] xl:w-[300px] hidden lg:block">
+      <div className="absolute left-6 top-16 z-30 w-[280px] xl:w-[300px] hidden lg:block">
         <ProyeksiCard
           smaProvinsiStats={portalData?.smaProvinsiStats}
           isLoading={proyeksiLoading}
@@ -98,7 +98,7 @@ export const PortalHeroSection: React.FC<Props> = ({
       {/* ═══════════════════════════════════════════════════════════════════
           LAYER 3 — Cards Kanan (Floating, z-30, tidak menutupi peta)
       ════════════════════════════════════════════════════════════════════ */}
-      <div className="absolute right-6 top-24 z-30 w-[280px] xl:w-[300px] hidden lg:block">
+      <div className="absolute right-6 top-16 z-30 w-[280px] xl:w-[300px] hidden lg:block">
         <PortalDataCards
           cards={portalData?.cards ?? []}
           onViewRegionDetail={handleViewRegionDetail}
@@ -106,11 +106,10 @@ export const PortalHeroSection: React.FC<Props> = ({
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          LAYER 4 — Spacer: tinggi disesuaikan agar Legend Cabdis dan Matriks
-          muncul di bawah card terpanjang (kiri/kanan). Card = 680px + top-24 (96px) = 776px.
-          Pakai 850px untuk memberi jarak aman.
+          LAYER 4 — Spacer: Card = 860px + top-16 (64px) = 924px.
+          Pakai 1000px untuk memberi jarak aman.
       ════════════════════════════════════════════════════════════════════ */}
-      <div className="relative z-0 w-full" style={{ height: "850px" }} aria-hidden="true" />
+      <div className="relative z-0 w-full" style={{ height: "1000px" }} aria-hidden="true" />
 
       {/* ═══════════════════════════════════════════════════════════════════
           LAYER 5 — Content bawah (bisa di-scroll)

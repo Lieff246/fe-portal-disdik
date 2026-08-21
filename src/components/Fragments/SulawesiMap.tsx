@@ -299,8 +299,8 @@ export const SulawesiMap: React.FC<MapProps> = ({
     }
   });
 
-  const mapCenter: [number, number] = customCenter ?? [-2.00, 121.0];
-  const mapZoom   = customZoom ?? 7.6;
+  const mapCenter: [number, number] = customCenter ?? [-2.9, 121.5];
+  const mapZoom   = customZoom ?? 7.5;
   const isInteractive = !!onlyShowId;
 
   // Styles
@@ -317,7 +317,7 @@ export const SulawesiMap: React.FC<MapProps> = ({
   }, []);
 
   const navigateToKabupaten = (kode: string) => {
-    navigate(`/kabupaten/${kode}`);
+    // Navigate tanpa query param (default: tampil semua jenjang PAUD–SMA)
   };
 
   const handlePopupClose = useCallback(() => {
@@ -333,6 +333,7 @@ export const SulawesiMap: React.FC<MapProps> = ({
   return (
     <div className="absolute inset-0 w-full h-full overflow-hidden bg-transparent">
       <MapContainer
+        key={`map-${mapCenter[0]}-${mapCenter[1]}-${mapZoom}`}
         center={mapCenter}
         zoom={mapZoom}
         zoomSnap={0.1}

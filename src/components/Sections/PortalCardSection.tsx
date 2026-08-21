@@ -78,11 +78,10 @@ export const PortalDataCards: React.FC<PortalDataCardsProps> = ({
   }, [cards]);
 
   const handleKunjungi = (item: any) => {
-    const slug = KODE_KAB_TO_CABDIS[item.kode_kabupaten] ?? "cabdis-1";
-    if (onViewRegionDetail) {
-      onViewRegionDetail({ ...item, slug });
-    } else if (slug) {
-      navigate(`/${slug}?name=${encodeURIComponent(item.kabupaten ?? item.nama ?? "")}`);
+    // Navigate ke halaman kabupaten detail dengan filter wewenang aktif
+    const kodeKab = item.kode_kabupaten ?? "";
+    if (kodeKab) {
+      navigate(`/kabupaten/${kodeKab}?wewenang=true`);
     }
   };
 
@@ -128,7 +127,7 @@ export const PortalDataCards: React.FC<PortalDataCardsProps> = ({
   });
 
   return (
-    <div className="relative flex h-[680px] flex-col overflow-hidden rounded-[2.5rem] border border-slate-200/80 bg-gradient-to-br from-white via-slate-50 to-blue-50/70 p-6 shadow-[0_35px_90px_-35px_rgba(15,23,42,0.35)] font-poppins sm:p-7">
+    <div className="relative flex h-[860px] flex-col overflow-hidden rounded-[2.5rem] border border-slate-200/80 bg-gradient-to-br from-white via-slate-50 to-blue-50/70 p-6 shadow-[0_35px_90px_-35px_rgba(15,23,42,0.35)] font-poppins sm:p-7">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(37,99,235,0.10),_transparent_40%)]" />
 
       {/* Header */}
@@ -205,7 +204,7 @@ export const PortalDataCards: React.FC<PortalDataCardsProps> = ({
                   </div>
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-400">
-                      PAUD – SMP
+                      PAUD - SMP
                     </p>
                     <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-wide">
                       Kewenangan Kabupaten/Kota
@@ -251,7 +250,7 @@ export const PortalDataCards: React.FC<PortalDataCardsProps> = ({
 
             {/* Tombol navigasi */}
             <button
-              onClick={() => navigate(`/kabupaten/${item.kode_kabupaten}`)}
+              onClick={() => handleKunjungi(item)}
               className="mt-1 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-blue-500/25 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl active:scale-95"
             >
               <span>Kunjungi</span>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { MapContainer, GeoJSON, Marker, Tooltip, useMap } from "react-leaflet";
 import L from "leaflet";
@@ -152,13 +152,17 @@ const SetMapView = ({ center, zoom, mapRef }: {
 export const KabupatenDetail = () => {
   const { kodeKabupaten } = useParams<{ kodeKabupaten: string }>();
   const navigate = useNavigate();
+  
+  // Baca query parameter ?wewenang=true dari URL
+  const searchParams = new URLSearchParams(window.location.search);
+  const initialWewenang = searchParams.get("wewenang") === "true";
 
   const kode = kodeKabupaten ?? "";
   const info = KABUPATEN_INFO[kode];
 
   const [kecamatanGeo, setKecamatanGeo] = useState<any>(null);
   const [indonesiaGeo, setIndonesiaGeo] = useState<any>(null);
-  const [sekolahList, setSekolahList] = useState<SekolahMarker[]>([]);
+  const [allSekolah, setAllSekolah] = useState<SekolahMarker[]>([]); // Raw data dari API (semua jenjang)
   const [stats, setStats] = useState<StatistikKabupatenItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [geoLoading, setGeoLoading] = useState(true);
@@ -168,7 +172,7 @@ export const KabupatenDetail = () => {
   const [hoveredKecamatan, setHoveredKecamatan] = useState<string | null>(null);
   const [hoveredJenjang, setHoveredJenjang] = useState<string | null>(null);
   const [kecamatanColorMap, setKecamatanColorMap] = useState<Record<string, string>>({});
-  const [filterWewenang, setFilterWewenang] = useState(false); // Toggle filter wewenang kabupaten
+  const [filterWewenang, setFilterWewenang] = useState(initialWewenang); // Toggle filter
   const mapRef = useRef<L.Map | null>(null);
 
   useEffect(() => {
@@ -199,11 +203,11 @@ export const KabupatenDetail = () => {
     setLoading(true);
     setError(null);
     Promise.all([
-      PemetaanService.getSekolah({ kode_kabupaten: kode, wewenang: filterWewenang }),
+      PemetaanService.getSekolah({ kode_kabupaten: kode }), // Fetch semua jenjang (PAUD–SMA)
       PemetaanService.getStatistikKabupaten(),
     ])
       .then(([sekolahRes, statRes]) => {
-        setSekolahList(sekolahRes.data ?? []);
+        setAllSekolah(sekolahRes.data ?? []); // Simpan raw data
         const found = (statRes.data ?? []).find(
           (s) => String(s.kode_kabupaten) === kode
         );
@@ -214,7 +218,16 @@ export const KabupatenDetail = () => {
         setError("Gagal memuat data sekolah. Periksa koneksi ke server.");
       })
       .finally(() => setLoading(false));
-  }, [kode, filterWewenang]); // Re-fetch saat filterWewenang berubah
+  }, [kode]); // Hanya re-fetch saat kode kabupaten berubah
+
+  // ─── Filter client-side berdasarkan toggle wewenang ──────────────────────────
+  const WEWENANG_JENJANG = ["PAUD", "TK", "KB", "TPA", "SPS", "RA", "SD", "MI", "SMP", "MTs"];
+  const sekolahList = useMemo(() => {
+    if (filterWewenang) {
+      return allSekolah.filter((s) => WEWENANG_JENJANG.includes(s.bentuk_pendidikan ?? ""));
+    }
+    return allSekolah;
+  }, [allSekolah, filterWewenang]);
 
   const indonesiaStyle = useCallback(() => ({
     color: "#d1d5db",
@@ -247,7 +260,7 @@ export const KabupatenDetail = () => {
   }
 
   const generalData = {
-    total_sekolah: stats?.total_sekolah ?? sekolahList.length,
+    total_sekolah: sekolahList.length, // Counter dinamis berdasarkan filter
     total_rombel: 0,
     total_siswa: stats?.total_siswa ?? 0,
     total_guru: 0,
@@ -494,85 +507,10 @@ export const KabupatenDetail = () => {
                 })}
               </div>
             </div>
-
-            {/* ── Toggle Filter Wewenang Kabupaten/Kota ───────────────────── */}
-            <div className="glass-card rounded-[1.5rem] p-4 border border-white/60 shadow-lg flex flex-col gap-3 shrink-0">
-              <p className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                Filter Tampilan
-              </p>
-              
-              <div className="flex flex-col gap-2">
-                {/* Option: Semua Jenjang */}
-                <button
-                  onClick={() => setFilterWewenang(false)}
-                  className={`flex items-start gap-3 px-3 py-3 rounded-xl border-2 transition-all ${
-                    !filterWewenang
-                      ? "border-blue-500 bg-blue-50/80 shadow-sm"
-                      : "border-slate-200 bg-white/60 hover:border-blue-200 hover:bg-blue-50/40"
-                  }`}
-                >
-                  <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all ${
-                    !filterWewenang ? "border-blue-500 bg-blue-500" : "border-slate-300 bg-white"
-                  }`}>
-                    {!filterWewenang && (
-                      <div className="w-1.5 h-1.5 rounded-full bg-white" />
-                    )}
-                  </div>
-                  <div className="text-left min-w-0">
-                    <p className={`text-xs font-bold leading-tight transition-colors ${
-                      !filterWewenang ? "text-blue-700" : "text-slate-600"
-                    }`}>
-                      Semua Jenjang
-                    </p>
-                    <p className="text-[10px] text-slate-400 font-semibold mt-0.5">
-                      PAUD – SMA (Semua)
-                    </p>
-                  </div>
-                </button>
-
-                {/* Option: Wewenang Kabupaten */}
-                <button
-                  onClick={() => setFilterWewenang(true)}
-                  className={`flex items-start gap-3 px-3 py-3 rounded-xl border-2 transition-all ${
-                    filterWewenang
-                      ? "border-emerald-500 bg-emerald-50/80 shadow-sm"
-                      : "border-slate-200 bg-white/60 hover:border-emerald-200 hover:bg-emerald-50/40"
-                  }`}
-                >
-                  <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all ${
-                    filterWewenang ? "border-emerald-500 bg-emerald-500" : "border-slate-300 bg-white"
-                  }`}>
-                    {filterWewenang && (
-                      <div className="w-1.5 h-1.5 rounded-full bg-white" />
-                    )}
-                  </div>
-                  <div className="text-left min-w-0">
-                    <p className={`text-xs font-bold leading-tight transition-colors ${
-                      filterWewenang ? "text-emerald-700" : "text-slate-600"
-                    }`}>
-                      Wewenang Kab/Kota
-                    </p>
-                    <p className="text-[10px] text-slate-400 font-semibold mt-0.5">
-                      PAUD – SMP
-                    </p>
-                  </div>
-                </button>
-              </div>
-
-              {/* Hint text */}
-              <div className="pt-2 border-t border-slate-100">
-                <p className="text-[9px] text-slate-400 leading-relaxed">
-                  {filterWewenang 
-                    ? "🏛️ Hanya menampilkan sekolah di bawah wewenang Dinas Pendidikan Kabupaten/Kota (PAUD, TK, SD, SMP)"
-                    : "🏫 Menampilkan semua sekolah termasuk SMA/SMK/SLB yang dikelola provinsi"
-                  }
-                </p>
-              </div>
-            </div>
           </div>
         )}
 
-        {/* ── PANEL KANAN — Search + List Sekolah ───────────────────────── */}
+        {/* ── PANEL KANAN — Filter + Search + List Sekolah ──────────────── */}
         <div
           className="absolute top-6 right-6 z-10 w-72 flex flex-col gap-3"
           style={{ maxHeight: "calc(100vh - 3rem)" }}
@@ -582,6 +520,44 @@ export const KabupatenDetail = () => {
           <div className="border-l-4 pl-4 border-blue-600 shrink-0">
             <div className="font-bold text-base text-slate-800">Sekolah</div>
             <div className="text-xs font-medium text-slate-400">Daftar Sekolah {info.nama}</div>
+          </div>
+
+          {/* Filter Tampilan - Horizontal Compact */}
+          <div className="glass-card rounded-2xl p-3 border border-white/60 shadow-lg shrink-0">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setFilterWewenang(false)}
+                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border transition-all ${
+                  !filterWewenang
+                    ? "border-blue-500 bg-blue-500 text-white shadow-sm"
+                    : "border-slate-200 bg-white text-slate-600 hover:border-blue-300"
+                }`}
+              >
+                <div className={`w-2 h-2 rounded-full ${
+                  !filterWewenang ? "bg-white" : "bg-slate-300"
+                }`} />
+                <div className="text-center">
+                  <p className="text-[10px] font-bold leading-tight">Semua</p>
+                  <p className="text-[8px] opacity-75">PAUD–SMA</p>
+                </div>
+              </button>
+              <button
+                onClick={() => setFilterWewenang(true)}
+                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border transition-all ${
+                  filterWewenang
+                    ? "border-emerald-500 bg-emerald-500 text-white shadow-sm"
+                    : "border-slate-200 bg-white text-slate-600 hover:border-emerald-300"
+                }`}
+              >
+                <div className={`w-2 h-2 rounded-full ${
+                  filterWewenang ? "bg-white" : "bg-slate-300"
+                }`} />
+                <div className="text-center">
+                  <p className="text-[10px] font-bold leading-tight">Wewenang</p>
+                  <p className="text-[8px] opacity-75">PAUD–SMP</p>
+                </div>
+              </button>
+            </div>
           </div>
 
           {/* Search */}
