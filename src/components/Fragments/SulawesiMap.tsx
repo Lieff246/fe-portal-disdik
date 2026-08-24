@@ -3,9 +3,7 @@ import { MapContainer, GeoJSON, Marker, Tooltip, Popup, useMap } from "react-lea
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { useNavigate } from "react-router-dom";
-
-// indonesia-provinces.json TIDAK di-import sebagai module agar tidak masuk bundle.
-// Akan di-fetch secara lazy dari /public saat komponen mount.
+import indonesiaGeoData from "@/assets/geojson/indonesia-provinces.json";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface MapProps {
@@ -224,21 +222,13 @@ export const SulawesiMap: React.FC<MapProps> = ({
   selectedSchool,
 }) => {
   const navigate = useNavigate();
-  const [indonesiaGeo, setIndonesiaGeo]   = useState<any>(null);
   const [cabdisGeoData, setCabdisGeoData] = useState<Record<number, any>>({});
   const [sultengGeo, setSultengGeo]       = useState<any>(null);
   const [activeKode, setActiveKode]       = useState<string | null>(null);
   const [hoveredKode, setHoveredKode]     = useState<string | null>(null);
 
-  // ── Load GeoJSON secara lazy dari /public (tidak masuk JS bundle) ──────────
   useEffect(() => {
-    // 1. Background Indonesia — selalu dibutuhkan
-    fetch("/geojson/base/indonesia-provinces.json")
-      .then((r) => r.json())
-      .then(setIndonesiaGeo)
-      .catch(console.error);
-
-    // 2. Peta Sulawesi Tengah per kabupaten — hanya untuk dashboard utama
+    // 1. Peta Sulawesi Tengah per kabupaten — hanya untuk dashboard utama
     if (!onlyShowId) {
       fetch("/geojson/sulteng-light.geojson")
         .then((r) => r.json())
@@ -246,8 +236,7 @@ export const SulawesiMap: React.FC<MapProps> = ({
         .catch(console.error);
     }
 
-    // 3. GeoJSON detail cabdis — HANYA difetch saat halaman detail cabdis
-    //    (onlyShowId ada), bukan di dashboard utama
+    // 2. GeoJSON detail cabdis — HANYA difetch saat halaman detail cabdis
     if (onlyShowId) {
       fetch(`/geojson/cabdis/cabdis${onlyShowId}.geojson`)
         .then((r) => r.json())
@@ -350,17 +339,15 @@ export const SulawesiMap: React.FC<MapProps> = ({
         <PanToActiveKabupaten activeKode={activeKode} defaultCenter={mapCenter} />
 
         {/* ── BASE: Peta Indonesia abu-abu ── */}
-        {layer === "base" && indonesiaGeo && (
-          <GeoJSON data={indonesiaGeo as any} style={baseStyle} interactive={false} />
+        {layer === "base" && (
+          <GeoJSON data={indonesiaGeoData as any} style={baseStyle} interactive={false} />
         )}
 
         {/* ── INTERACTIVE ── */}
         {layer === "interactive" && (
           <>
             {/* Background Indonesia */}
-            {indonesiaGeo && (
-              <GeoJSON data={indonesiaGeo as any} style={baseStyle} interactive={false} />
-            )}
+            <GeoJSON data={indonesiaGeoData as any} style={baseStyle} interactive={false} />
 
             {/* ━━━ DASHBOARD UTAMA: polygon per kabupaten ━━━ */}
             {!onlyShowId && sultengGeo && (
