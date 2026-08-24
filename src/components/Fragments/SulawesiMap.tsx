@@ -317,7 +317,7 @@ export const SulawesiMap: React.FC<MapProps> = ({
   }, []);
 
   const navigateToKabupaten = (kode: string) => {
-    // Navigate tanpa query param (default: tampil semua jenjang PAUD–SMA)
+    navigate(`/kabupaten/${kode}`);
   };
 
   const handlePopupClose = useCallback(() => {
