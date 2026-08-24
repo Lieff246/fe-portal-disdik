@@ -6,11 +6,16 @@ import { SchoolLandingSekolahku } from '@/pages/SchoolLandingSekolahku';
 import { SchoolLandingV3 } from '@/pages/SchoolLandingV3';
 import { KabupatenDetail } from '@/pages/KabupatenDetail';
 import { SekolahDetail } from '@/pages/SekolahDetail';
+import { ProvinsiDetail } from '@/pages/ProvinsiDetail';
 
 const landingRoutes = [
   {
     path: '',
     element: <Home />,
+  },
+  {
+    path: 'provinsi',
+    element: <ProvinsiDetail />,
   },
   {
     path: 'cabdis-1',

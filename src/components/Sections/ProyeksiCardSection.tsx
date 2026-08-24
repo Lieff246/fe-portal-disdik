@@ -101,7 +101,7 @@ export const ProyeksiCard: React.FC<ProyeksiCardProps> = ({
   }, [smaProvinsiStats]);
 
   const handleKunjungi = () => {
-    navigate("/?jenjang=sma");
+    navigate("/provinsi");
   };
 
   const activeJenjang = JENJANG_CONFIG.filter(
