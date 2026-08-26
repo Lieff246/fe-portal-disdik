@@ -2,6 +2,9 @@ import { useRoutes } from 'react-router-dom';
 
 import LandingRoutes from './landingRoutes';
 import TeacherRoutes from './teacherRoutes';
+import { AdminLogin } from '@/pages/Admin/Login';
+import { AdminSekolahForm } from '@/pages/Admin/SekolahForm';
+import { ProtectedRoute } from '@/components/Admin/ProtectedRoute';
 
 function Router() {
   const routes = [
@@ -9,6 +12,20 @@ function Router() {
     {
       path: 'teachers',
       children: [...TeacherRoutes],
+    },
+    // ── Auth ───────────────────────────────────────────────────────────────
+    {
+      path: 'login',
+      element: <AdminLogin />,
+    },
+    // ── Admin Form (protected) — diakses dari tombol inline di halaman publik
+    {
+      path: 'admin/sekolah/create',
+      element: <ProtectedRoute><AdminSekolahForm /></ProtectedRoute>,
+    },
+    {
+      path: 'admin/sekolah/:npsn/edit',
+      element: <ProtectedRoute><AdminSekolahForm /></ProtectedRoute>,
     },
     {
       path: '*',

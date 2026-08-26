@@ -3,8 +3,11 @@ import { useParams, useNavigate } from "react-router-dom";
 import { MapContainer, GeoJSON, Marker, Tooltip, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { ChevronLeft, School as SchoolIcon, MapPin, Eye, Search } from "lucide-react";
+import { ChevronLeft, School as SchoolIcon, MapPin, Eye, Search, Pencil, Trash2, Plus } from "lucide-react";
 import { PemetaanService } from "@/services/pemetaanService";
+import { AdminService } from "@/services/adminService";
+import { useAuth } from "@/contexts/AuthContext";
+import { DeleteConfirmModal } from "@/components/Admin/DeleteConfirmModal";
 import type { SekolahMarker, StatistikKabupatenItem } from "@/types";
 import { CABDIS_CONFIG } from "@/components/Fragments/SulawesiMap";
 import { GeneralDataSection } from "@/components/Sections/GeneralDataSection";
@@ -174,6 +177,26 @@ export const KabupatenDetail = () => {
   const [kecamatanColorMap, setKecamatanColorMap] = useState<Record<string, string>>({});
   const [filterWewenang, setFilterWewenang] = useState(initialWewenang); // Toggle filter
   const mapRef = useRef<L.Map | null>(null);
+
+  // ─── Admin state ──────────────────────────────────────────────────────────
+  const { isAdmin } = useAuth();
+  const [deleteTarget, setDeleteTarget] = useState<SekolahMarker | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    if (!deleteTarget?.npsn) return;
+    setDeleting(true);
+    try {
+      await AdminService.deleteSekolah(deleteTarget.npsn);
+      setAllSekolah(prev => prev.filter(s => s.npsn !== deleteTarget.npsn));
+      setDeleteTarget(null);
+      if (selectedSchool?.npsn === deleteTarget.npsn) setSelectedSchool(null);
+    } catch (err: any) {
+      alert(err?.data?.message ?? "Gagal menghapus sekolah.");
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   useEffect(() => {
     if (!kode) return;
@@ -522,6 +545,17 @@ export const KabupatenDetail = () => {
             <div className="text-xs font-medium text-slate-400">Daftar Sekolah {info.nama}</div>
           </div>
 
+          {/* Tombol Tambah Sekolah — hanya admin */}
+          {isAdmin && (
+            <button
+              onClick={() => navigate(`/admin/sekolah/create?kode_kabupaten=${kode}`)}
+              className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-black uppercase tracking-wider border border-emerald-600 transition-all shrink-0 shadow-sm"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Tambah Sekolah
+            </button>
+          )}
+
           {/* Filter Tampilan - Horizontal Compact */}
           <div className="glass-card rounded-2xl p-3 border border-white/60 shadow-lg shrink-0">
             <div className="flex items-center gap-2">
@@ -676,6 +710,32 @@ export const KabupatenDetail = () => {
                       <span>Klik Detail</span>
                     </button>
                   </div>
+
+                  {/* Tombol admin — hanya muncul kalau login */}
+                  {isAdmin && (
+                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100/80">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (school.npsn) navigate(`/admin/sekolah/${school.npsn}/edit`);
+                        }}
+                        className="flex items-center justify-center gap-1 py-1.5 px-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-600 text-[10px] font-black uppercase tracking-wider border border-blue-100 transition-all"
+                      >
+                        <Pencil className="w-3 h-3" />
+                        <span>Edit</span>
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteTarget(school);
+                        }}
+                        className="flex items-center justify-center gap-1 py-1.5 px-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-500 text-[10px] font-black uppercase tracking-wider border border-red-100 transition-all"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        <span>Hapus</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -718,6 +778,15 @@ export const KabupatenDetail = () => {
           &copy; 2026 BLPT - Dinas Pendidikan Provinsi Sulawesi Tengah
         </p>
       </footer>
+
+      {/* Modal hapus sekolah */}
+      <DeleteConfirmModal
+        isOpen={!!deleteTarget}
+        nama={deleteTarget?.nama ?? ""}
+        loading={deleting}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
 
       <style>{`
         .leaflet-container { background: transparent !important; }

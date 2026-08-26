@@ -1,10 +1,15 @@
 import { BrowserRouter } from 'react-router-dom';
+import { AuthProvider } from '@/contexts/AuthContext';
+import { AdminBar } from '@/components/Admin/AdminBar';
 import Router from './routes';
 
 function App() {
   return (
     <BrowserRouter>
-      <Router />
+      <AuthProvider>
+        <AdminBar />
+        <Router />
+      </AuthProvider>
     </BrowserRouter>
   );
 }
