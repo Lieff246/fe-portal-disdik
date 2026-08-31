@@ -53,10 +53,10 @@ const KABUPATEN_INFO: Record<string, {
 };
 
 const KECAMATAN_COLORS = [
-  "#3b82f6", "#06b6d4", "#10b981", "#f59e0b", "#ef4444",
-  "#8b5cf6", "#ec4899", "#14b8a6", "#f97316", "#6366f1",
-  "#84cc16", "#e11d48", "#0ea5e9", "#d946ef", "#22c55e",
-  "#fb923c", "#a855f7", "#2dd4bf", "#facc15", "#38bdf8",
+  "#0000FF", "#0047AB", "#89CFF0", "#A4DDED", "#AFDBF5",
+  "#0070FF", "#1E90FF", "#7BAFD4", "#87D3F8", "#4682b4",
+  "#007FFF", "#318CE7", "#73C2FB", "#45B1E8", "#3E8EDE",
+  "#1F75FE", "#6CB4EE", "#87CEFA", "#87CEEB", "#4B92DB",
 ];
 
 // ─── Warna marker per jenjang pendidikan ─────────────────────────────────────
