@@ -1,9 +1,6 @@
 import { Home } from '@/pages/Home';
 import { CabangDinas } from '@/pages/CabangDinas';
 import About from '@/pages/About';
-import { SchoolLanding } from '@/pages/SchoolLanding';
-import { SchoolLandingSekolahku } from '@/pages/SchoolLandingSekolahku';
-import { SchoolLandingV3 } from '@/pages/SchoolLandingV3';
 import { KabupatenDetail } from '@/pages/KabupatenDetail';
 import { KabupatenKota } from '@/pages/KabupatenKota';
 import { SekolahDetail } from '@/pages/SekolahDetail';
@@ -57,14 +54,6 @@ const landingRoutes = [
   {
     path: 'about',
     element: <About />,
-  },
-  {
-    path: 'sekolah2/:id',
-    element: <SchoolLandingSekolahku />,
-  },
-  {
-    path: 'sekolah3/:id',
-    element: <SchoolLandingV3 />,
   },
 ];
 
