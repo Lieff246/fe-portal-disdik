@@ -3,7 +3,6 @@ import { CabangDinas } from '@/pages/CabangDinas';
 import About from '@/pages/About';
 import { KabupatenDetail } from '@/pages/KabupatenDetail';
 import { KabupatenDetailV2 } from '@/pages/KabupatenDetailV2';
-import { KabupatenKota } from '@/pages/KabupatenKota';
 import { SekolahDetail } from '@/pages/SekolahDetail';
 import { ProvinsiDetail } from '@/pages/ProvinsiDetail';
 
@@ -39,10 +38,6 @@ const landingRoutes = [
   {
     path: 'cabdis-6',
     element: <CabangDinas slug="cabdis-6" />,
-  },
-  {
-    path: 'kabupaten',
-    element: <KabupatenKota />,
   },
   {
     path: 'kabupaten/:kodeKabupaten',
