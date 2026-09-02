@@ -680,10 +680,6 @@ export const KabupatenDetailV2 = () => {
                 Home
               </Link>
               <span className="text-slate-300">›</span>
-              <Link to="/kabupaten" className="hover:text-blue-600 transition-colors">
-                Kabupaten / Kota
-              </Link>
-              <span className="text-slate-300">›</span>
               <span className="text-blue-600 font-extrabold">{info.nama}</span>
               <span className="ml-1.5 px-2 py-0.5 rounded-md bg-blue-50 border border-blue-200/80 text-[10px] text-blue-700 font-bold uppercase tracking-wider">
                 V2 Redesign
