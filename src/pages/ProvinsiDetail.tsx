@@ -241,10 +241,15 @@ export const ProvinsiDetail = () => {
     <div className="w-screen font-poppins bg-slate-50 overflow-x-hidden">
 
       {/* ══ SECTION 1: HERO ══════════════════════════════════════════════════ */}
-      <div className="relative w-full bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-950 overflow-hidden">
+      <div
+        className="relative w-full overflow-hidden"
+        style={{
+        background: "linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #1d4ed8 100%)",
+      }}
+    >
         {/* Blur blobs */}
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 right-1/3 w-80 h-80 bg-blue-600/15 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-400/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 right-1/3 w-80 h-80 bg-cyan-400/15 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10 max-w-7xl mx-auto px-8 py-10">
           {/* Breadcrumb */}
@@ -253,7 +258,7 @@ export const ProvinsiDetail = () => {
               Home
             </button>
             <span>›</span>
-            <span className="text-purple-300 font-semibold">Portal Provinsi</span>
+            <span className="text-blue-300 font-semibold">Portal Provinsi</span>
           </div>
 
           <div className="flex items-center gap-6">
@@ -271,8 +276,8 @@ export const ProvinsiDetail = () => {
 
             {/* Title */}
             <div className="flex-1">
-              <div className="inline-flex items-center gap-2 bg-purple-500/20 border border-purple-400/30 rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-purple-300 mb-3">
-                <span className="w-1.5 h-1.5 bg-purple-400 rounded-full" />
+              <div className="inline-flex items-center gap-2 bg-blue-500/20 border border-blue-400/30 rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-blue-300 mb-3">
+                <span className="w-1.5 h-1.5 bg-blue-400 rounded-full" />
                 Kewenangan Provinsi Sulawesi Tengah
               </div>
               <h1 className="text-2xl font-black text-white leading-tight mb-1">
@@ -286,9 +291,9 @@ export const ProvinsiDetail = () => {
             {/* Tombol kembali */}
             <button
               onClick={() => navigate("/")}
-              className="flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-2xl px-4 py-2.5 text-sm font-bold transition-all shrink-0"
+             className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-xl text-xs font-bold border border-white/40 shadow-sm transition-all backdrop-blur-md"
             >
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft className="w-4 h-4 text-white" />
               Kembali
             </button>
           </div>
@@ -300,7 +305,7 @@ export const ProvinsiDetail = () => {
         <div className="grid grid-cols-5 gap-4">
 
           {/* Total */}
-          <div className="bg-gradient-to-br from-indigo-600 to-purple-600 rounded-[1.5rem] p-5 text-white shadow-xl shadow-indigo-500/30">
+          <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-[1.5rem] p-5 text-white shadow-xl shadow-blue-500/30">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
                 <Building2 className="w-5 h-5" />
@@ -462,7 +467,7 @@ export const ProvinsiDetail = () => {
             {(loadingData || loadingGeo) && (
               <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/40 backdrop-blur-sm">
                 <div className="bg-white rounded-2xl px-5 py-3 flex items-center gap-3 shadow-xl border border-slate-100">
-                  <div className="w-4 h-4 border-2 border-slate-200 border-t-purple-600 rounded-full animate-spin" />
+                  <div className="w-4 h-4 border-2 border-slate-200 border-t-blue-600 rounded-full animate-spin" />
                   <span className="text-xs font-bold text-slate-700">Memuat peta...</span>
                 </div>
               </div>
@@ -472,7 +477,7 @@ export const ProvinsiDetail = () => {
           {/* Panel Kanan — Filter + List sekolah */}
           <div className="flex flex-col gap-3 min-h-0">
             {/* Title */}
-            <div className="border-l-4 pl-3 border-purple-600 shrink-0">
+            <div className="border-l-4 pl-3 border-blue-600 shrink-0">
               <div className="font-bold text-sm text-slate-800">Daftar Sekolah</div>
               <div className="text-xs text-slate-400 font-medium">SMA Sederajat Sulawesi Tengah</div>
             </div>
@@ -481,7 +486,7 @@ export const ProvinsiDetail = () => {
             {isAdmin && (
               <button
                 onClick={() => navigate("/admin/sekolah/create")}
-                className="flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-2xl px-4 py-2.5 text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-purple-500/30 shrink-0"
+                className="flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-2xl px-4 py-2.5 text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-blue-500/30 shrink-0"
               >
                 <Plus className="w-4 h-4" />
                 Tambah Sekolah
@@ -499,8 +504,8 @@ export const ProvinsiDetail = () => {
                     onClick={() => setFilterJenjang(j)}
                     className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border transition-all ${
                       active
-                        ? "bg-purple-600 text-white border-purple-600 shadow-sm"
-                        : "bg-white text-slate-600 border-slate-200 hover:border-purple-300"
+                        ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                        : "bg-white text-slate-600 border-slate-200 hover:border-blue-300"
                     }`}
                   >
                     {j === "semua" ? "Semua" : j}
@@ -518,7 +523,7 @@ export const ProvinsiDetail = () => {
                 value={selectedSchool ? "" : schoolSearch}
                 disabled={!!selectedSchool}
                 onChange={(e) => setSchoolSearch(e.target.value)}
-                className={`w-full bg-white border border-slate-200 rounded-2xl py-2.5 pl-9 pr-4 text-xs font-semibold placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-200 transition-all shadow-sm ${
+                className={`w-full bg-white border border-slate-200 rounded-2xl py-2.5 pl-9 pr-4 text-xs font-semibold placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all shadow-sm ${
                   selectedSchool ? "opacity-50 cursor-not-allowed" : ""
                 }`}
               />
@@ -528,14 +533,14 @@ export const ProvinsiDetail = () => {
             <div className="flex items-center justify-between px-1 shrink-0">
               <span className="text-[11px] text-slate-400 font-semibold">
                 {selectedSchool
-                  ? <span className="text-purple-600 font-bold">1 sekolah dipilih</span>
+                  ? <span className="text-blue-600 font-bold">1 sekolah dipilih</span>
                   : <span>{filteredSekolah.length} dari {allSekolah.length} sekolah</span>
                 }
               </span>
               {selectedSchool && (
                 <button
                   onClick={() => { setSelectedSchool(null); setSchoolSearch(""); }}
-                  className="text-[10px] font-black text-purple-600 hover:text-purple-800 uppercase tracking-wider transition-colors"
+                  className="text-[10px] font-black text-blue-600 hover:text-blue-800 uppercase tracking-wider transition-colors"
                 >
                   ← Lihat Semua
                 </button>
@@ -565,7 +570,7 @@ export const ProvinsiDetail = () => {
                     key={key}
                     onClick={() => setSelectedSchool(school)}
                     className={`bg-white rounded-2xl p-3 border shadow-sm cursor-pointer transition-all hover:shadow-md hover:scale-[1.01] shrink-0 ${
-                      isActive ? "border-purple-300 bg-purple-50/50" : "border-slate-100"
+                      isActive ? "border-blue-300 bg-blue-50/50" : "border-slate-100"
                     }`}
                   >
                     <div className="flex items-center gap-2.5">
@@ -610,7 +615,7 @@ export const ProvinsiDetail = () => {
                           e.stopPropagation();
                           if (school.npsn) navigate(`/sekolah/${school.npsn}`);
                         }}
-                        className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-600 text-[9px] font-black uppercase tracking-wider border border-purple-100 transition-all"
+                        className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-600 text-[9px] font-black uppercase tracking-wider border border-blue-100 transition-all"
                       >
                         <Eye className="w-3 h-3" />
                         Detail

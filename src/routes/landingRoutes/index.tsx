@@ -5,7 +5,6 @@ import { SchoolLanding } from '@/pages/SchoolLanding';
 import { SchoolLandingSekolahku } from '@/pages/SchoolLandingSekolahku';
 import { SchoolLandingV3 } from '@/pages/SchoolLandingV3';
 import { KabupatenDetail } from '@/pages/KabupatenDetail';
-import { KabupatenKota } from '@/pages/KabupatenKota';
 import { SekolahDetail } from '@/pages/SekolahDetail';
 import { ProvinsiDetail } from '@/pages/ProvinsiDetail';
 
@@ -41,10 +40,6 @@ const landingRoutes = [
   {
     path: 'cabdis-6',
     element: <CabangDinas slug="cabdis-6" />,
-  },
-  {
-    path: 'kabupaten',
-    element: <KabupatenKota />,
   },
   {
     path: 'kabupaten/:kodeKabupaten',
