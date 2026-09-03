@@ -672,23 +672,37 @@ export const KabupatenDetailV2 = () => {
       <header className="bg-white/90 backdrop-blur-md border-b border-slate-200/80 sticky top-0 z-40 shadow-xs">
         <div className="max-w-7xl mx-auto px-6 sm:px-8 py-4">
           
-          {/* Top Sub-Row: Breadcrumb (Left) & Actions (Right) */}
-          <div className="flex items-center justify-between gap-4 mb-3 pb-2.5 border-b border-slate-100">
+          {/* Top Sub-Row: Breadcrumb (Left), Logo Brand (Center), & Actions (Right) */}
+          <div className="relative flex items-center justify-between gap-4 mb-3 pb-2.5 border-b border-slate-100">
             
             {/* Breadcrumbs on Left */}
-            <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
-              <Link to="/" className="hover:text-blue-600 transition-colors">
+            <div className="flex items-center gap-1.5 sm:gap-2 text-xs font-semibold text-slate-500 min-w-0 z-10">
+              <Link to="/" className="hover:text-blue-600 transition-colors shrink-0">
                 Home
               </Link>
               <span className="text-slate-300">›</span>
-              <span className="text-blue-600 font-extrabold">{info.nama}</span>
-              <span className="ml-1.5 px-2 py-0.5 rounded-md bg-blue-50 border border-blue-200/80 text-[10px] text-blue-700 font-bold uppercase tracking-wider">
+              <span className="text-blue-600 font-extrabold truncate">{info.nama}</span>
+              <span className="hidden sm:inline-block ml-1 px-2 py-0.5 rounded-md bg-blue-50 border border-blue-200/80 text-[10px] text-blue-700 font-bold uppercase tracking-wider shrink-0">
                 V2 Redesign
               </span>
             </div>
 
+            {/* Official Brand Logo di Tengah-Tengah Navbar (Model C) */}
+            <div className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center pointer-events-auto">
+              <Link to="/" className="transition-transform hover:scale-105" title="Berani Cerdas - Portal Data Pemetaan Sekolah">
+                <img
+                  src="/logo.png"
+                  alt="Logo Portal Data Pendidikan"
+                  className="h-7 sm:h-8.5 w-auto object-contain drop-shadow-2xs"
+                  onError={(e) => {
+                    (e.target as HTMLElement).style.display = "none";
+                  }}
+                />
+              </Link>
+            </div>
+
             {/* Action Buttons on Right */}
-            <div className="flex items-center gap-2.5 shrink-0">
+            <div className="flex items-center gap-2.5 shrink-0 z-10">
               {isAdmin && (
                 <button
                   onClick={() => navigate(`/admin/sekolah/create?kode_kabupaten=${kode}`)}
@@ -709,28 +723,13 @@ export const KabupatenDetailV2 = () => {
             </div>
           </div>
 
-          {/* Main Header Row: Official Logo + Identity + Title */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-4 sm:gap-5">
+          {/* Main Header Row: District Emblem & Title (Paling Kiri) */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1">
+            <div className="flex items-center gap-3.5 sm:gap-4.5">
               
-              {/* Official Brand Logo */}
-              <Link to="/" className="shrink-0 transition-transform hover:scale-105" title="Berani Cerdas">
-                <img
-                  src="/logo.png"
-                  alt="Logo Portal Data Pendidikan"
-                  className="h-10 sm:h-12 w-auto object-contain drop-shadow-xs"
-                  onError={(e) => {
-                    (e.target as HTMLElement).style.display = "none";
-                  }}
-                />
-              </Link>
-
-              {/* Vertical Divider */}
-              <div className="h-9 w-px bg-slate-200 shrink-0 hidden sm:block" />
-
-              {/* District Emblem */}
+              {/* District Emblem di Paling Kiri */}
               {info.logoImg && (
-                <div className="w-10 h-11 bg-white rounded-xl border border-slate-200/80 p-1 flex items-center justify-center shrink-0 shadow-2xs hidden sm:flex">
+                <div className="w-11 h-12 sm:w-13 sm:h-14 bg-white rounded-2xl border border-slate-200/90 p-1.5 flex items-center justify-center shrink-0 shadow-xs">
                   <img
                     src={info.logoImg}
                     alt={info.nama}
@@ -742,9 +741,9 @@ export const KabupatenDetailV2 = () => {
                 </div>
               )}
 
-              {/* Text Information */}
+              {/* Text Information Langsung di Samping Logo Daerah */}
               <div className="min-w-0">
-                <div className="inline-flex items-center gap-1.5 bg-blue-50 border border-blue-200/60 rounded-full px-2.5 py-0.5 text-[10px] font-bold text-blue-700 uppercase tracking-widest mb-1">
+                <div className="inline-flex items-center gap-1.5 bg-blue-50 border border-blue-200/60 rounded-full px-2.5 py-0.5 text-[10px] font-bold text-blue-700 uppercase tracking-widest mb-1.5">
                   <span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-pulse" />
                   {filterWewenang === "kab" ? "Kewenangan Kabupaten / Kota" : "Semua Jenjang Satuan Pendidikan"}
                 </div>
