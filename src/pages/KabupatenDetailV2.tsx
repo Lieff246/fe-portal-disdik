@@ -186,7 +186,6 @@ const createPopupHtml = (s: SekolahMarker) => {
         
         <!-- Location -->
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">
-          <span style="font-size:12px;line-height:1;">📍</span>
           <p style="font-size:11px;color:#475569;font-weight:600;margin:0;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
             Kec. ${cleanKec || '—'}
           </p>
@@ -207,7 +206,7 @@ const createPopupHtml = (s: SekolahMarker) => {
         ${gmapsUrl ? `
           <div style="text-align:center;margin-top:8px;">
             <a href="${gmapsUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:4px;font-size:9.5px;color:#64748b;text-decoration:none;font-weight:700;">
-              <span>🧭 Buka Rute di Google Maps</span>
+              <span>Buka Rute di Google Maps</span>
               <span style="font-size:9px;color:#94a3b8;">↗</span>
             </a>
           </div>
@@ -753,7 +752,7 @@ export const KabupatenDetailV2 = () => {
                   Dinas Pendidikan {info.nama}
                 </h1>
                 <p className="text-slate-500 text-xs font-medium mt-0.5 line-clamp-1">
-                  Pengelolaan &amp; Pemetaan PAUD, SD, SMP &amp; Sederajat — Wilayah {info.nama}
+                  Pengelolaan &amp; Pemetaan Sekolah — Wilayah {info.nama}
                 </p>
               </div>
 
