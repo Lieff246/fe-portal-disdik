@@ -591,7 +591,9 @@ export const KabupatenDetailV2 = () => {
       else if (["Kursus", "LKP"].includes(b)) map[key].per_jenjang.Kursus += 1;
     });
 
-    return Object.values(map).sort((a, b) => b.total - a.total);
+    return Object.values(map)
+      .filter((k) => k.total > 0)
+      .sort((a, b) => b.total - a.total);
   }, [baseSekolahList, kecamatanGeo, kecamatanColorMap]);
 
   const maxKecamatanTotal = useMemo(
