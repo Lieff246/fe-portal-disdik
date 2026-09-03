@@ -1,7 +1,6 @@
 import { useRoutes } from 'react-router-dom';
 
 import LandingRoutes from './landingRoutes';
-import TeacherRoutes from './teacherRoutes';
 import { AdminLogin } from '@/pages/Admin/Login';
 import { AdminSekolahForm } from '@/pages/Admin/SekolahForm';
 import { ProtectedRoute } from '@/components/Admin/ProtectedRoute';
@@ -9,10 +8,6 @@ import { ProtectedRoute } from '@/components/Admin/ProtectedRoute';
 function Router() {
   const routes = [
     ...LandingRoutes,
-    {
-      path: 'teachers',
-      children: [...TeacherRoutes],
-    },
     // ── Auth ───────────────────────────────────────────────────────────────
     {
       path: 'login',
@@ -37,3 +32,4 @@ function Router() {
 }
 
 export default Router;
+

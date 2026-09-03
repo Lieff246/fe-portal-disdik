@@ -1,11 +1,8 @@
 import { Home } from '@/pages/Home';
 import { CabangDinas } from '@/pages/CabangDinas';
 import About from '@/pages/About';
-import { SchoolLanding } from '@/pages/SchoolLanding';
-import { SchoolLandingSekolahku } from '@/pages/SchoolLandingSekolahku';
-import { SchoolLandingV3 } from '@/pages/SchoolLandingV3';
 import { KabupatenDetail } from '@/pages/KabupatenDetail';
-import { KabupatenKota } from '@/pages/KabupatenKota';
+import { KabupatenDetailV2 } from '@/pages/KabupatenDetailV2';
 import { SekolahDetail } from '@/pages/SekolahDetail';
 import { ProvinsiDetail } from '@/pages/ProvinsiDetail';
 
@@ -43,12 +40,12 @@ const landingRoutes = [
     element: <CabangDinas slug="cabdis-6" />,
   },
   {
-    path: 'kabupaten',
-    element: <KabupatenKota />,
-  },
-  {
     path: 'kabupaten/:kodeKabupaten',
     element: <KabupatenDetail />,
+  },
+  {
+    path: 'kabupaten-v2/:kodeKabupaten',
+    element: <KabupatenDetailV2 />,
   },
   {
     path: 'sekolah/:npsn',
@@ -57,14 +54,6 @@ const landingRoutes = [
   {
     path: 'about',
     element: <About />,
-  },
-  {
-    path: 'sekolah2/:id',
-    element: <SchoolLandingSekolahku />,
-  },
-  {
-    path: 'sekolah3/:id',
-    element: <SchoolLandingV3 />,
   },
 ];
 

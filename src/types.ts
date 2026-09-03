@@ -50,6 +50,8 @@ export interface SekolahMarker {
   jumlah_siswa: number;
   daya_tampung: number;
   status_sekolah: string;
+  akreditasi?: string | null;
+  akses_internet?: string | null;
 }
 
 /** Response dari GET /api/v1/sekolah */
@@ -78,38 +80,160 @@ export interface DetailSma {
   polygon: any | null;
 }
 
+export interface GuruData {
+  pns?: number;
+  pppk?: number;
+  honorer?: number;
+  tendik?: number;
+  pendidik?: number;
+  total?: number;
+}
+
+export interface SarprasDetailItem {
+  jenis: string;
+  baik: number;
+  rusak_ringan?: number;
+  rusak_sedang?: number;
+  rusak_berat?: number;
+}
+
+export interface SarprasData {
+  total_ruangan?: number;
+  total_baik?: number;
+  total_rusak_ringan?: number;
+  total_rusak_sedang?: number;
+  total_rusak_berat?: number;
+  detail?: SarprasDetailItem[];
+}
+
+export interface BencanaCategoryItem {
+  status?: string | null;
+  category?: string;
+  description?: string;
+  jenis_batuan?: string;
+  lereng_score?: string;
+  jenis_dataran?: string;
+  lereng_percentage?: string;
+  tanah_score?: string;
+}
+
+export interface PotensiBencanaData {
+  gempa?: BencanaCategoryItem;
+  banjir?: BencanaCategoryItem;
+  longsor?: BencanaCategoryItem;
+  tsunami?: BencanaCategoryItem;
+  gerakan_tanah?: BencanaCategoryItem;
+}
+
+export interface SiswaPerTingkatItem {
+  total: number;
+  rombel: number;
+  laki_laki: number;
+  perempuan: number;
+}
+
+export interface SiswaData {
+  total?: number;
+  laki_laki?: number;
+  perempuan?: number;
+  per_tingkat?: Record<string, SiswaPerTingkatItem>;
+  total_rombel?: number;
+}
+
+export interface RombelItem {
+  rombongan_belajar_id?: string;
+  nama_rombel: string;
+  nama_ruang?: string;
+  tingkat_pendidikan?: string;
+  jenis_rombel?: string;
+  jumlah_anggota_rombel?: number;
+  semester_id?: string;
+}
+
+export interface PrincipalStats {
+  principalName?: string;
+  principalStatus?: string;
+  nip?: string;
+  principalPhone?: string;
+  accreditation?: string;
+  studentCount?: number;
+  rombelCount?: number;
+  totalTeachers?: number;
+  pnsCount?: number;
+  nonPnsCount?: number;
+  totalTendik?: number;
+  certifiedPercentage?: number;
+  email?: string;
+  npsn?: string;
+  kecamatan?: string;
+}
+
 /** Response dari GET /api/v1/sekolah/:npsn */
 export interface SekolahDetailResponse {
   status: string;
   data: {
     npsn: string;
     nama: string;
+    nama_nomenklatur?: string | null;
     bentuk_pendidikan: string;
+    bentuk_pendidikan_nama?: string;
+    jenjang?: string;
     status_sekolah: string;
+    status?: string;
+    status_kepemilikan?: string | null;
+    yayasan?: string | null;
+    keaktifan?: string | null;
+    cabang_dinas?: string | null;
     alamat_jalan: string;
-    rt: string | null;
-    rw: string | null;
+    rt?: string | null;
+    rw?: string | null;
+    nama_dusun?: string | null;
     desa_kelurahan: string | null;
     kecamatan: string;
     kabupaten: string;
+    kabupaten_kota?: string;
     kode_kabupaten: string;
-    provinsi: string;
+    kode_wilayah?: string;
+    provinsi?: string;
     kode_pos: string | null;
     lintang: number | null;
     bujur: number | null;
+    latitude?: number | null;
+    longitude?: number | null;
     nomor_telepon: string | null;
+    nomor_fax?: string | null;
     email: string | null;
     website: string | null;
     akreditasi: string | null;
-    jumlah_siswa: number;
-    daya_tampung: number;
-    is_3t: boolean;
-    is_sekolah_alam: boolean;
-    sumber_listrik: string | null;
-    akses_internet: string | null;
-    waktu_penyelenggaraan: string | null;
-    semester_id: string;
-    detailSma: DetailSma | null;
+    jumlah_siswa?: number;
+    daya_tampung?: number;
+    daya_listrik?: number | null;
+    luas_tanah_milik?: number | null;
+    luas_tanah_bukan_milik?: number | null;
+    is_3t?: boolean;
+    is_sekolah_alam?: boolean;
+    wilayah_terpencil?: string | null;
+    wilayah_perbatasan?: string | null;
+    partisipasi_bos?: string | null;
+    sumber_listrik?: string | null;
+    akses_internet?: string | null;
+    akses_internet_2?: string | null;
+    waktu_penyelenggaraan?: string | null;
+    sertifikasi_iso?: string | null;
+    sk_pendirian_sekolah?: string | null;
+    tanggal_sk_pendirian?: string | null;
+    sk_izin_operasional?: string | null;
+    tanggal_sk_izin_operasional?: string | null;
+    mbs?: string | null;
+    semester_id?: string;
+    detailSma?: DetailSma | null;
+    guru?: GuruData | null;
+    sarpras?: SarprasData | null;
+    potensi_bencana?: PotensiBencanaData | null;
+    siswa?: SiswaData | null;
+    rombel?: RombelItem[] | null;
+    stats?: PrincipalStats | null;
+    has_coordinates?: boolean;
   };
 }
 
@@ -124,6 +248,10 @@ export interface StatistikKabupatenItem {
   total_3t: number;
   total_siswa: number;
   total_daya_tampung: number;
+  total_rombel?: number;
+  total_guru?: number;
+  total_tendik?: number;
+  total_pegawai?: number;
 }
 
 export interface StatistikKabupatenResponse {
