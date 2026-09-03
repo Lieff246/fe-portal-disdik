@@ -37,19 +37,19 @@ const KABUPATEN_INFO: Record<string, {
   zoom: number;
   bounds: [[number, number], [number, number]];
 }> = {
-  "7271": { nama: "Kota Palu",              slug: "cabdis-1", center: [-0.896,  119.870], zoom: 11, bounds: [[-1.35,  119.45], [-0.40,  120.30]] },
-  "7210": { nama: "Kab. Sigi",              slug: "cabdis-1", center: [-1.270,  119.950], zoom: 10, bounds: [[-2.20,  119.20], [-0.35,  120.65]] },
-  "7203": { nama: "Kab. Donggala",          slug: "cabdis-2", center: [-0.672,  119.739], zoom: 9,  bounds: [[-1.65,  118.95], [ 0.35,  120.55]] },
-  "7208": { nama: "Kab. Parigi Moutong",    slug: "cabdis-2", center: [-0.804,  120.162], zoom: 9,  bounds: [[-2.00,  119.30], [ 0.35,  121.30]] },
-  "7202": { nama: "Kab. Poso",              slug: "cabdis-3", center: [-1.540,  120.700], zoom: 9,  bounds: [[-2.60,  119.70], [-0.45,  121.90]] },
-  "7209": { nama: "Kab. Tojo Una-Una",      slug: "cabdis-3", center: [-0.872,  121.585], zoom: 9,  bounds: [[-2.00,  120.60], [ 0.25,  122.80]] },
-  "7206": { nama: "Kab. Morowali",          slug: "cabdis-4", center: [-2.806,  122.135], zoom: 9,  bounds: [[-4.00,  121.10], [-1.60,  123.20]] },
-  "7212": { nama: "Kab. Morowali Utara",    slug: "cabdis-4", center: [-2.050,  121.350], zoom: 9,  bounds: [[-3.30,  120.30], [-0.90,  122.40]] },
-  "7201": { nama: "Kab. Banggai",           slug: "cabdis-5", center: [-0.955,  122.785], zoom: 9,  bounds: [[-2.20,  121.60], [ 0.20,  124.00]] },
-  "7207": { nama: "Kab. Banggai Kepulauan", slug: "cabdis-5", center: [-1.317,  123.294], zoom: 9,  bounds: [[-2.50,  122.30], [-0.30,  124.50]] },
-  "7211": { nama: "Kab. Banggai Laut",      slug: "cabdis-5", center: [-1.590,  123.502], zoom: 10, bounds: [[-2.40,  122.70], [-0.80,  124.30]] },
-  "7204": { nama: "Kab. Tolitoli",          slug: "cabdis-6", center: [1.046,   120.818], zoom: 9,  bounds: [[-0.10,  119.70], [ 2.25,  121.95]] },
-  "7205": { nama: "Kab. Buol",              slug: "cabdis-6", center: [1.169,   121.422], zoom: 9,  bounds: [[ 0.10,  120.40], [ 2.30,  122.60]] },
+  "7271": { nama: "Kota Palu",              slug: "cabdis-1", center: [-0.896,  119.870], zoom: 12, bounds: [[-1.35,  119.45], [-0.40,  120.30]] },
+  "7210": { nama: "Kab. Sigi",              slug: "cabdis-1", center: [-1.463,  119.963], zoom: 9,  bounds: [[-2.45,  119.20], [-0.50,  120.70]] },
+  "7203": { nama: "Kab. Donggala",          slug: "cabdis-2", center: [-0.350,  119.811], zoom: 8,  bounds: [[-1.85,  118.80], [ 1.25,  120.60]] },
+  "7208": { nama: "Kab. Parigi Moutong",    slug: "cabdis-2", center: [-0.222,  120.641], zoom: 8,  bounds: [[-1.60,  119.40], [ 1.20,  121.80]] },
+  "7202": { nama: "Kab. Poso",              slug: "cabdis-3", center: [-1.671,  120.512], zoom: 9,  bounds: [[-2.65,  119.70], [-0.70,  121.90]] },
+  "7209": { nama: "Kab. Tojo Una-Una",      slug: "cabdis-3", center: [-0.873,  121.642], zoom: 9,  bounds: [[-2.00,  120.50], [ 0.30,  122.85]] },
+  "7206": { nama: "Kab. Morowali",          slug: "cabdis-4", center: [-2.895,  122.310], zoom: 9,  bounds: [[-4.00,  121.00], [-1.70,  123.60]] },
+  "7212": { nama: "Kab. Morowali Utara",    slug: "cabdis-4", center: [-1.852,  121.444], zoom: 9,  bounds: [[-3.00,  120.30], [-0.90,  122.50]] },
+  "7201": { nama: "Kab. Banggai",           slug: "cabdis-5", center: [-1.022,  122.659], zoom: 9,  bounds: [[-2.20,  121.50], [ 0.10,  124.00]] },
+  "7207": { nama: "Kab. Banggai Kepulauan", slug: "cabdis-5", center: [-1.400,  123.154], zoom: 9,  bounds: [[-2.50,  122.30], [-0.50,  124.50]] },
+  "7211": { nama: "Kab. Banggai Laut",      slug: "cabdis-5", center: [-1.590,  123.502], zoom: 10, bounds: [[-2.50,  122.50], [-0.80,  124.50]] },
+  "7204": { nama: "Kab. Tolitoli",          slug: "cabdis-6", center: [ 0.981,  120.663], zoom: 9,  bounds: [[ 0.10,  119.60], [ 2.25,  121.95]] },
+  "7205": { nama: "Kab. Buol",              slug: "cabdis-6", center: [ 0.996,  121.534], zoom: 9,  bounds: [[ 0.20,  120.40], [ 2.10,  122.60]] },
 };
 
 const KECAMATAN_COLORS = [
@@ -320,15 +320,15 @@ export const KabupatenDetail = () => {
           <MapContainer
             center={info.center}
             zoom={info.zoom}
-            minZoom={8}
-            maxZoom={13}
+            minZoom={7}
+            maxZoom={18}
             zoomControl={false}
             dragging={true}
             scrollWheelZoom={true}
             doubleClickZoom={true}
             attributionControl={false}
             maxBounds={info.bounds}
-            maxBoundsViscosity={1.0}
+            maxBoundsViscosity={0.6}
             style={{ width: "100%", height: "100%", background: "transparent" }}
           >
             <SetMapView center={info.center} zoom={info.zoom} mapRef={mapRef} />
