@@ -2,7 +2,7 @@ import { Home } from '@/pages/Home';
 import { CabangDinas } from '@/pages/CabangDinas';
 import About from '@/pages/About';
 import { KabupatenDetail } from '@/pages/KabupatenDetail';
-import { KabupatenDetailV2 } from '@/pages/KabupatenDetailV2';
+import { KabupatenDetailOld } from '@/pages/KabupatenDetailOld';
 import { SekolahDetail } from '@/pages/SekolahDetail';
 import { ProvinsiDetail } from '@/pages/ProvinsiDetail';
 
@@ -44,8 +44,8 @@ const landingRoutes = [
     element: <KabupatenDetail />,
   },
   {
-    path: 'kabupaten-v2/:kodeKabupaten',
-    element: <KabupatenDetailV2 />,
+    path: 'kabupaten-old/:kodeKabupaten',
+    element: <KabupatenDetailOld />,
   },
   {
     path: 'sekolah/:npsn',

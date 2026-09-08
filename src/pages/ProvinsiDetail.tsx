@@ -1127,7 +1127,7 @@ export const ProvinsiDetail = () => {
               <div className="flex items-center gap-2">
                 {(selectedKabKode || selectedCabdis) && (
                   <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-lg border border-blue-100 flex items-center gap-1">
-                    <span>{selectedKabKode ? KABUPATEN_CENTROIDS[selectedKabKode]?.nama : CABDIS_INFO[selectedCabdis]?.nama}</span>
+                    <span>{selectedKabKode ? KABUPATEN_CENTROIDS[selectedKabKode]?.nama : (selectedCabdis ? CABDIS_INFO[selectedCabdis]?.nama : "")}</span>
                     <button
                       onClick={() => {
                         setSelectedKabKode(null);
