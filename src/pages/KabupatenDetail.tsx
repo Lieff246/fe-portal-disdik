@@ -22,12 +22,14 @@ import {
   Briefcase,
   Settings,
   Filter,
-  ArrowUpDown
+  ArrowUpDown,
+  ChevronDown,
 } from "lucide-react";
 import { PemetaanService } from "@/services/pemetaanService";
 import { AdminService } from "@/services/adminService";
 import { useAuth } from "@/contexts/AuthContext";
 import { DeleteConfirmModal } from "@/components/Admin/DeleteConfirmModal";
+import { GeneralDataSection } from "@/components/Sections/GeneralDataSection";
 import { createSchoolPopupHtml } from "@/utils/schoolPopup";
 import type { SekolahMarker, StatistikKabupatenItem } from "@/types";
 
@@ -268,6 +270,29 @@ export const KabupatenDetail = () => {
   const kode = kodeKabupaten ?? "";
   const info = KABUPATEN_INFO[kode];
 
+  // ── State Dropdown Ganti Kabupaten ─────────────────────────────────────────
+  const [kabupatenDropdownOpen, setKabupatenDropdownOpen] = useState(false);
+  const [kabupatenSearch, setKabupatenSearch] = useState("");
+  const kabupatenDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (kabupatenDropdownRef.current && !kabupatenDropdownRef.current.contains(e.target as Node)) {
+        setKabupatenDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleSwitchKabupaten = (targetKode: string) => {
+    setKabupatenDropdownOpen(false);
+    setKabupatenSearch("");
+    if (targetKode !== kode) {
+      navigate(`/kabupaten/${targetKode}`);
+    }
+  };
+
   // ── State Data ───────────────────────────────────────────────────────────
   const [allSekolah, setAllSekolah] = useState<SekolahMarker[]>([]);
   const [stats, setStats] = useState<StatistikKabupatenItem | null>(null);
@@ -296,6 +321,7 @@ export const KabupatenDetail = () => {
   const [filterAkreditasi, setFilterAkreditasi] = useState<string>("");
   const [schoolSearch, setSchoolSearch] = useState<string>("");
   const [sortBy, setSortBy] = useState<string>("az");
+  const [showKecamatanPolygon, setShowKecamatanPolygon] = useState<boolean>(true);
 
   // Hover states
   const [hoveredJenjang, setHoveredJenjang] = useState<string | null>(null);
@@ -408,6 +434,19 @@ export const KabupatenDetail = () => {
 
     return { total, tk: tkStats, sd: sdStats, smp: smpStats, sma: smaStats, akrA, sekolah3T };
   }, [baseSekolahList, allSekolah]);
+
+  // ── Computed: Data Umum Satuan Pendidikan (Section 5) ────────────────────
+  const generalData = useMemo(() => {
+    return {
+      total_sekolah: totalStats.total || (stats?.total_sekolah ?? allSekolah.length),
+      total_rombel: stats?.total_rombel ?? 0,
+      total_siswa: stats?.total_siswa || allSekolah.reduce((acc, s) => acc + (s.jumlah_siswa || 0), 0),
+      total_guru: stats?.total_guru ?? 0,
+      total_tendik: stats?.total_tendik ?? 0,
+      total_pegawai: stats?.total_pegawai ?? 0,
+      semester_id: "20261",
+    };
+  }, [totalStats.total, stats, allSekolah]);
 
   // ── Computed: Filtered & Sorted Sekolah untuk List Panel ─────────────────
   const filteredSekolah = useMemo(() => {
@@ -597,7 +636,7 @@ export const KabupatenDetail = () => {
             {/* Breadcrumbs on Left */}
             <div className="flex items-center gap-1.5 sm:gap-2 text-xs font-semibold text-slate-500 min-w-0 z-10">
               <Link to="/" className="hover:text-blue-600 transition-colors shrink-0">
-                Home
+                Beranda
               </Link>
               <span className="text-slate-300">›</span>
               <span className="text-blue-600 font-extrabold truncate">{info.nama}</span>
@@ -639,7 +678,7 @@ export const KabupatenDetail = () => {
             </div>
           </div>
 
-          {/* Main Header Row: District Emblem & Title (Paling Kiri) */}
+          {/* Main Header Row: District Emblem & Title (Kiri) + Switcher Kabupaten (Kanan) */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1">
             <div className="flex items-center gap-3.5 sm:gap-4.5">
 
@@ -672,6 +711,104 @@ export const KabupatenDetail = () => {
               </div>
 
             </div>
+
+            {/* ── Dropdown Switcher Kabupaten / Kota ── */}
+            <div className="relative shrink-0 self-start sm:self-center" ref={kabupatenDropdownRef}>
+              <button
+                onClick={() => setKabupatenDropdownOpen(!kabupatenDropdownOpen)}
+                className={`group flex items-center gap-2.5 px-3.5 py-2 rounded-2xl text-xs font-bold transition-all duration-200 cursor-pointer shadow-xs ${kabupatenDropdownOpen
+                    ? "bg-blue-600 text-white shadow-blue-600/25 ring-2 ring-blue-200"
+                    : "bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/90 hover:border-blue-300 hover:shadow-sm"
+                  }`}
+                title="Pilih dan Ganti Kabupaten / Kota"
+              >
+                <div className="w-6 h-6 rounded-xl overflow-hidden bg-slate-100 flex items-center justify-center shrink-0 border border-slate-200/60 shadow-2xs">
+                  {info.logoImg ? (
+                    <img src={info.logoImg} alt="" className="w-full h-full object-contain" />
+                  ) : (
+                    <MapPin className={`w-3.5 h-3.5 ${kabupatenDropdownOpen ? "text-white" : "text-blue-600"}`} />
+                  )}
+                </div>
+                <div className="text-left flex flex-col">
+                  <span className={`text-[8.5px] uppercase tracking-wider font-extrabold ${kabupatenDropdownOpen ? "text-blue-100" : "text-slate-400"}`}>
+                    Pilih Wilayah Lain
+                  </span>
+                  <span className="leading-tight font-black truncate max-w-[140px] sm:max-w-[170px]">
+                    {info.nama}
+                  </span>
+                </div>
+                <ChevronDown
+                  className={`w-3.5 h-3.5 transition-transform duration-200 ${kabupatenDropdownOpen ? "rotate-180 text-white" : "text-slate-400 group-hover:text-blue-600"
+                    }`}
+                />
+              </button>
+
+              {/* Popover Menu Dropdown */}
+              {kabupatenDropdownOpen && (
+                <div className="absolute right-0 top-full mt-2 w-72 sm:w-80 rounded-2xl bg-white/95 backdrop-blur-xl border border-slate-200/90 shadow-2xl p-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div className="px-3 py-1.5 mb-1.5 border-b border-slate-100 flex items-center justify-between">
+                    <span className="text-[9.5px] font-black uppercase tracking-wider text-slate-400">
+                      Ganti Kabupaten / Kota
+                    </span>
+                    <span className="text-[9px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+                      13 Wilayah
+                    </span>
+                  </div>
+
+                  {/* Search Mini */}
+                  <div className="relative mb-2 px-1">
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Cari kabupaten / kota..."
+                      value={kabupatenSearch}
+                      onChange={(e) => setKabupatenSearch(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-1.5 pl-8 pr-3 text-xs font-semibold placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:bg-white transition-all"
+                      autoFocus
+                    />
+                  </div>
+
+                  {/* List 13 Kabupaten */}
+                  <div className="max-h-64 overflow-y-auto space-y-0.5 pr-0.5 scrollbar-thin">
+                    {Object.entries(KABUPATEN_INFO)
+                      .filter(([, kInfo]) =>
+                        kInfo.nama.toLowerCase().includes(kabupatenSearch.toLowerCase())
+                      )
+                      .map(([kKode, kInfo]) => {
+                        const isCurrent = kKode === kode;
+                        return (
+                          <button
+                            key={kKode}
+                            onClick={() => handleSwitchKabupaten(kKode)}
+                            className={`flex items-center gap-2.5 w-full text-left px-2.5 py-2 rounded-xl text-xs font-bold transition-all duration-150 cursor-pointer ${isCurrent
+                                ? "bg-blue-50 text-blue-700 border border-blue-200/70 shadow-2xs"
+                                : "text-slate-700 hover:bg-blue-50/60 hover:text-blue-700 hover:pl-3"
+                              }`}
+                          >
+                            <div className="w-6 h-6 rounded-lg bg-white border border-slate-200/80 p-0.5 flex items-center justify-center shrink-0 shadow-2xs">
+                              {kInfo.logoImg ? (
+                                <img src={kInfo.logoImg} alt="" className="w-full h-full object-contain" />
+                              ) : (
+                                <span>{kInfo.logoEmoji || "🏛️"}</span>
+                              )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate leading-tight font-extrabold">{kInfo.nama}</p>
+                              <p className="text-[9px] text-slate-400 font-medium">Wilayah {kInfo.slug.replace("cabdis-", "")}</p>
+                            </div>
+                            {isCurrent && (
+                              <span className="text-[9px] font-extrabold text-blue-600 bg-white px-1.5 py-0.5 rounded-md border border-blue-200 shrink-0">
+                                Aktif
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                  </div>
+                </div>
+              )}
+            </div>
+
           </div>
 
         </div>
@@ -832,7 +969,7 @@ export const KabupatenDetail = () => {
                   opacity={0.65}
                 />
 
-                {!loadingGeo && kecamatanGeo && (
+                {!loadingGeo && kecamatanGeo && showKecamatanPolygon && (
                   <GeoJSON
                     key={`geo-${kode}`}
                     data={kecamatanGeo}
@@ -880,6 +1017,7 @@ export const KabupatenDetail = () => {
               </MapContainer>
             </div>
 
+            {/* ── Kontrol Zoom & Reset di Kiri Atas Peta ── */}
             <div className="absolute top-4 left-4 z-10 flex flex-col gap-1">
               <button
                 onClick={() => mapRef.current?.zoomIn()}
@@ -901,6 +1039,33 @@ export const KabupatenDetail = () => {
                 title="Reset tampilan"
               >
                 ⌂
+              </button>
+            </div>
+
+            {/* ── Toggle Poligon Batas Kecamatan di Kanan Atas Peta ── */}
+            <div className="absolute top-4 right-4 z-10">
+              <button
+                onClick={() => setShowKecamatanPolygon(!showKecamatanPolygon)}
+                className={`group flex items-center gap-2 px-3 py-2 rounded-2xl text-xs font-bold transition-all duration-200 cursor-pointer shadow-md backdrop-blur-md border ${
+                  showKecamatanPolygon
+                    ? "bg-white/95 text-blue-700 border-blue-200/90 hover:bg-white hover:border-blue-300 shadow-blue-500/10"
+                    : "bg-white/90 text-slate-500 border-slate-200 hover:bg-white hover:text-slate-800"
+                }`}
+                title={showKecamatanPolygon ? "Klik untuk menyembunyikan poligon batas kecamatan" : "Klik untuk menampilkan poligon batas kecamatan"}
+              >
+                <Layers className={`w-3.5 h-3.5 transition-transform duration-200 group-hover:scale-110 ${
+                  showKecamatanPolygon ? "text-blue-600" : "text-slate-400"
+                }`} />
+                <span className="hidden sm:inline">Poligon Kecamatan</span>
+                <span
+                  className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-md transition-colors ${
+                    showKecamatanPolygon
+                      ? "bg-blue-100/80 text-blue-700"
+                      : "bg-slate-100 text-slate-400"
+                  }`}
+                >
+                  {showKecamatanPolygon ? "ON" : "OFF"}
+                </span>
               </button>
             </div>
 
@@ -1307,110 +1472,11 @@ export const KabupatenDetail = () => {
 
       {/* ══ SECTION 5: DATA UMUM SATUAN PENDIDIKAN ══════════════════════════ */}
       <div className="max-w-7xl mx-auto px-6 sm:px-8 mt-10">
-        <div className="bg-white rounded-[1.5rem] p-6 sm:p-8 shadow-sm border border-slate-200/80">
-
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-100">
-            <div className="flex items-center gap-3">
-              <div className="w-2.5 h-6 bg-blue-600 rounded-full" />
-              <div>
-                <h2 className="text-base font-black text-slate-900">
-                  Data Umum Satuan Pendidikan
-                </h2>
-                <p className="text-xs font-medium text-slate-400">
-                  Ringkasan agregat data pokok pendidikan {info.nama}
-                </p>
-              </div>
-            </div>
-
-            <span className="px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-[10px] font-extrabold uppercase tracking-widest">
-              Semester 20261
-            </span>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
-
-            <div className="bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl p-4 text-white shadow-xs">
-              <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center text-sm mb-3">
-                <Building2 className="w-4 h-4" />
-              </div>
-              <p className="text-[9px] font-black uppercase tracking-wider text-blue-100">Total Satuan Pend.</p>
-              <p className="text-xl font-black mt-1">
-                {totalStats.total.toLocaleString("id-ID")}
-              </p>
-            </div>
-
-            <div className="bg-indigo-50/60 rounded-2xl p-4 border border-indigo-100">
-              <div className="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center text-sm font-bold mb-3">
-                <Layers className="w-4 h-4" />
-              </div>
-              <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">Jumlah Rombel</p>
-              <p className="text-xl font-black text-slate-800 mt-1">
-                {stats?.total_rombel ? stats.total_rombel.toLocaleString("id-ID") : "0"}
-              </p>
-              {!stats?.total_rombel && (
-                <p className="text-[8px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">Belum Tersedia</p>
-              )}
-            </div>
-
-            <div className="bg-emerald-50/60 rounded-2xl p-4 border border-emerald-100">
-              <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-sm font-bold mb-3">
-                <Users className="w-4 h-4" />
-              </div>
-              <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">Total Siswa</p>
-              <p className="text-xl font-black text-slate-800 mt-1">
-                {stats?.total_siswa ? stats.total_siswa.toLocaleString("id-ID") : "0"}
-              </p>
-              {!stats?.total_siswa && (
-                <p className="text-[8px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">Belum Tersedia</p>
-              )}
-            </div>
-
-            <div className="bg-amber-50/60 rounded-2xl p-4 border border-amber-100">
-              <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-sm font-bold mb-3">
-                <GraduationCap className="w-4 h-4" />
-              </div>
-              <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">Tenaga Pendidik</p>
-              <p className="text-xl font-black text-slate-800 mt-1">
-                {stats?.total_guru ? stats.total_guru.toLocaleString("id-ID") : "0"}
-              </p>
-              {!stats?.total_guru && (
-                <p className="text-[8px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">Belum Tersedia</p>
-              )}
-            </div>
-
-            <div className="bg-rose-50/60 rounded-2xl p-4 border border-rose-100">
-              <div className="w-8 h-8 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center text-sm font-bold mb-3">
-                <Settings className="w-4 h-4" />
-              </div>
-              <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">T. Kependidikan</p>
-              <p className="text-xl font-black text-slate-800 mt-1">
-                {stats?.total_tendik ? stats.total_tendik.toLocaleString("id-ID") : "0"}
-              </p>
-              {!stats?.total_tendik && (
-                <p className="text-[8px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">Belum Tersedia</p>
-              )}
-            </div>
-
-            <div className="bg-purple-50/60 rounded-2xl p-4 border border-purple-100">
-              <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center text-sm font-bold mb-3">
-                <Briefcase className="w-4 h-4" />
-              </div>
-              <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">Pegawai Dinas</p>
-              <p className="text-xl font-black text-slate-800 mt-1">
-                {stats?.total_pegawai ? stats.total_pegawai.toLocaleString("id-ID") : "0"}
-              </p>
-              {!stats?.total_pegawai && (
-                <p className="text-[8px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">Belum Tersedia</p>
-              )}
-            </div>
-
-          </div>
-
-          <p className="text-[11px] font-medium text-slate-400 text-center mt-6">
-            * Data Tenaga Pendidik, Kependidikan, dan Pegawai Dinas akan terisi secara otomatis setelah integrasi modul data GTK &amp; Kepegawaian selesai.
-          </p>
-
-        </div>
+        <GeneralDataSection
+          data={generalData}
+          title="Data Umum Satuan Pendidikan"
+          subtitle={`Ringkasan agregat data pokok pendidikan ${info.nama}`}
+        />
       </div>
 
       {/* Footer */}

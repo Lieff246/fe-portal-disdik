@@ -88,21 +88,26 @@ export const PortalHeroSectionV2: React.FC<Props> = ({
   };
 
   return (
-    <section className="relative w-full overflow-hidden font-poppins" style={{ minHeight: "100vh" }}>
+    <section className="relative w-full overflow-hidden font-poppins">
 
       {/* ═══════════════════════════════════════════════════════════════════
-          LAYER 1 — Peta Sulawesi Tengah Imersif Full-Screen dengan Two-Way Sync
+          AREA HERO: Peta Sulawesi Tengah + Header + Panel + Cabdis Legend
       ════════════════════════════════════════════════════════════════════ */}
-      <div className="absolute inset-0 z-10">
-        <SulawesiMap
-          layer="interactive"
-          kabupatenStats={portalData?.kabupatenStats ?? []}
-          externalActiveKode={activeKode}
-          externalHoveredKode={hoveredKode}
-          onKabupatenSelect={(kode) => setActiveKode(kode)}
-          onKabupatenHover={(kode) => setHoveredKode(kode)}
-        />
-      </div>
+      <div className="relative w-full h-[620px] sm:h-[680px] lg:h-[720px] xl:h-[750px] overflow-hidden">
+
+        {/* LAYER 1 — Peta Sulawesi Tengah Imersif Full-Screen dengan Two-Way Sync */}
+        <div className="absolute inset-0 z-10">
+          <SulawesiMap
+            layer="interactive"
+            customCenter={[-1.25, 121.25]}
+            customZoom={7.3}
+            kabupatenStats={portalData?.kabupatenStats ?? []}
+            externalActiveKode={activeKode}
+            externalHoveredKode={hoveredKode}
+            onKabupatenSelect={(kode) => setActiveKode(kode)}
+            onKabupatenHover={(kode) => setHoveredKode(kode)}
+          />
+        </div>
 
       {/* ═══════════════════════════════════════════════════════════════════
           LAYER 2 — Header Bersih, Ramping & Transparan (Sesuai Arahan Pengguna)
@@ -343,18 +348,36 @@ export const PortalHeroSectionV2: React.FC<Props> = ({
         />
       </div>
 
-      {/* ═══════════════════════════════════════════════════════════════════
-          LAYER 5 — Spacer Vertikal Scrollable
-      ════════════════════════════════════════════════════════════════════ */}
-      <div className="relative z-0 w-full" style={{ height: "960px" }} aria-hidden="true" />
+        {/* ═══════════════════════════════════════════════════════════════════
+            LAYER 4 — Legend Cabdis Floating di Bawah Pulau Peta (Desktop)
+        ════════════════════════════════════════════════════════════════════ */}
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 hidden lg:flex justify-center pointer-events-auto">
+          <div className="inline-flex flex-col items-center gap-2 px-5 py-2.5 rounded-[1.25rem] bg-white/90 backdrop-blur-md border border-slate-200/80 shadow-md hover:shadow-lg transition-all">
+            <span className="text-[9px] font-black uppercase tracking-[0.35em] text-slate-400">
+              Peta Wilayah Cabang Dinas — Klik untuk Kunjungi
+            </span>
+            <CabdisLegend onNavigate={handleNavigateCabdis} />
+          </div>
+        </div>
+
+      </div>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          LAYER 6 — Konten Bawah (Cabdis Legend & Matriks Data Umum)
+          KONTEN BAWAH (Mobile Cards, Data Umum & Footer)
       ════════════════════════════════════════════════════════════════════ */}
-      <div className="relative z-30 w-full flex flex-col bg-gradient-to-t from-slate-50 via-slate-50/90 to-transparent pt-12">
+      <div className="relative z-30 w-full flex flex-col bg-slate-50/70 border-t border-slate-200/60 pt-6">
 
-        {/* Mobile cards */}
-        <div className="lg:hidden flex flex-col gap-5 px-6 pb-6 pt-16">
+        {/* Mobile cards & Mobile cabdis legend */}
+        <div className="lg:hidden flex flex-col gap-5 px-6 pb-6">
+          <div className="w-full flex justify-center pb-1">
+            <div className="inline-flex flex-col items-center gap-2.5 px-5 py-3.5 rounded-2xl bg-white/95 border border-slate-200/80 shadow-xs w-full">
+              <span className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-400 text-center">
+                Peta Wilayah Cabang Dinas — Klik untuk Kunjungi
+              </span>
+              <CabdisLegend onNavigate={handleNavigateCabdis} />
+            </div>
+          </div>
+
           <ProyeksiCardV2
             smaProvinsiStats={portalData?.smaProvinsiStats}
             isLoading={proyeksiLoading}
@@ -368,18 +391,8 @@ export const PortalHeroSectionV2: React.FC<Props> = ({
           />
         </div>
 
-        {/* ── Legend Cabdis — di tengah ── */}
-        <div className="w-full flex justify-center px-6 pb-6">
-          <div className="inline-flex flex-col items-center gap-2.5 px-6 py-3.5 rounded-[1.5rem] bg-white/90 backdrop-blur-md border border-slate-200/80 shadow-md">
-            <span className="text-[9px] font-black uppercase tracking-[0.35em] text-slate-400">
-              Peta Wilayah Cabang Dinas — Klik untuk Kunjungi
-            </span>
-            <CabdisLegend onNavigate={handleNavigateCabdis} />
-          </div>
-        </div>
-
         {/* ── Matriks Data Umum Satuan Pendidikan Asli ── */}
-        <div className="w-full px-6 pb-8">
+        <div className="max-w-7xl mx-auto w-full px-6 pb-8">
           <GeneralDataSection data={portalData?.summary} />
         </div>
 

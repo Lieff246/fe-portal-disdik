@@ -346,7 +346,7 @@ export const ProyeksiCardV2: React.FC<ProyeksiCardV2Props> = ({
       <div className="pt-3 border-t border-slate-100 shrink-0">
         <button
           onClick={handleKunjungi}
-          className="group flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600 py-2.5 text-xs font-bold text-white shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/30 hover:-translate-y-0.5 transition-all duration-200 active:scale-98 cursor-pointer"
+          className="group flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 py-2.5 text-xs font-bold text-white shadow-sm shadow-blue-600/25 hover:shadow-md hover:shadow-blue-600/35 hover:-translate-y-0.5 transition-all duration-200 active:scale-98 cursor-pointer"
         >
           <span>Kunjungi Portal Provinsi</span>
           <ChevronRight className="w-3.5 h-3.5 stroke-[2.5] transition-transform duration-200 group-hover:translate-x-1" />

@@ -342,10 +342,10 @@ export const PortalCardSectionV2: React.FC<PortalDataCardsProps> = ({
 
                 <button
                   onClick={(e) => handleKunjungi(e, item)}
-                  className="flex items-center gap-1 text-[11px] font-bold text-blue-600 bg-blue-50/60 hover:bg-blue-600 hover:text-white px-2.5 py-1 rounded-lg border border-blue-200/70 hover:border-blue-600 transition-all duration-200 shadow-2xs group-hover:shadow-sm cursor-pointer"
+                  className="flex items-center gap-1 text-[11px] font-bold text-white bg-blue-600 hover:bg-blue-700 active:scale-95 px-2.5 py-1 rounded-lg shadow-2xs hover:shadow-xs hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
                 >
                   <span>Detail</span>
-                  <ChevronRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
+                  <ChevronRight className="w-3.5 h-3.5 stroke-[2.5] transition-transform duration-200 group-hover:translate-x-0.5" />
                 </button>
               </div>
             </div>

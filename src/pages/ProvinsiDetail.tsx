@@ -29,6 +29,7 @@ import { PemetaanService } from "@/services/pemetaanService";
 import { AdminService } from "@/services/adminService";
 import { useAuth } from "@/contexts/AuthContext";
 import { createSchoolPopupHtml } from "@/utils/schoolPopup";
+import { GeneralDataSection } from "@/components/Sections/GeneralDataSection";
 import { DeleteConfirmModal } from "@/components/Admin/DeleteConfirmModal";
 import type { SekolahMarker } from "@/types";
 
@@ -508,6 +509,37 @@ export const ProvinsiDetail = () => {
     [cabdisDistribusi]
   );
 
+  // ── Computed: Data Umum Satuan Pendidikan Provinsi (Section 5) ────────────
+  const provinsiGeneralData = useMemo(() => {
+    const targetSchools = (selectedCabdis !== null || selectedKabKode !== null || filterJenjang !== "semua" || schoolSearch.trim() !== "")
+      ? filteredSekolah
+      : allSekolah;
+
+    const totalSiswa = targetSchools.reduce((acc, s) => acc + (s.jumlah_siswa || 0), 0);
+
+    return {
+      total_sekolah: targetSchools.length,
+      total_rombel: 0,
+      total_siswa: totalSiswa,
+      total_guru: 0,
+      total_tendik: 0,
+      total_pegawai: 0,
+      semester_id: "20261",
+    };
+  }, [allSekolah, filteredSekolah, selectedCabdis, selectedKabKode, filterJenjang, schoolSearch]);
+
+  const generalDataSubtitle = useMemo(() => {
+    if (selectedCabdis !== null) {
+      const cab = CABDIS_INFO[selectedCabdis];
+      return `Ringkasan data kewenangan provinsi untuk ${cab?.nama ?? `Wilayah ${selectedCabdis}`} (${cab?.label ?? ''})`;
+    }
+    if (selectedKabKode !== null) {
+      const kab = KABUPATEN_CENTROIDS[selectedKabKode];
+      return `Ringkasan data kewenangan provinsi untuk ${kab?.nama ?? selectedKabKode}`;
+    }
+    return "Ringkasan agregat data pokok pendidikan menengah & khusus (SMA/SMK/SLB) se-Sulawesi Tengah";
+  }, [selectedCabdis, selectedKabKode]);
+
   // ── Fly to School ────────────────────────────────────────────────────────
   const handleFocusSchool = useCallback((school: SekolahMarker) => {
     const lat = parseFloat(String(school.lintang ?? ""));
@@ -632,7 +664,7 @@ export const ProvinsiDetail = () => {
             {/* Breadcrumbs on Left */}
             <div className="flex items-center gap-1.5 sm:gap-2 text-xs font-semibold text-slate-500 min-w-0 z-10">
               <Link to="/" className="hover:text-blue-600 transition-colors shrink-0">
-                Home
+                Beranda
               </Link>
               <span className="text-slate-300">›</span>
               <span className="text-blue-600 font-extrabold truncate">Portal Provinsi</span>
@@ -1079,8 +1111,8 @@ export const ProvinsiDetail = () => {
                   {selectedKabKode
                     ? `Satuan Pendidikan ${KABUPATEN_CENTROIDS[selectedKabKode]?.nama}`
                     : selectedCabdis
-                    ? `Satuan Pendidikan ${CABDIS_INFO[selectedCabdis]?.nama}`
-                    : "Satuan Pendidikan Provinsi Sulawesi Tengah"}
+                      ? `Satuan Pendidikan ${CABDIS_INFO[selectedCabdis]?.nama}`
+                      : "Satuan Pendidikan Provinsi Sulawesi Tengah"}
                 </div>
               </div>
 
@@ -1123,11 +1155,10 @@ export const ProvinsiDetail = () => {
                   <button
                     key={item.key}
                     onClick={() => setFilterJenjang(item.key)}
-                    className={`px-3 py-1 rounded-full text-[10.5px] font-black uppercase tracking-wider border transition-all cursor-pointer ${
-                      active
+                    className={`px-3 py-1 rounded-full text-[10.5px] font-black uppercase tracking-wider border transition-all cursor-pointer ${active
                         ? "bg-blue-600 text-white border-blue-600 shadow-xs"
                         : "bg-slate-50 text-slate-600 border-slate-200 hover:border-blue-300 hover:bg-white"
-                    }`}
+                      }`}
                   >
                     {item.label}
                   </button>
@@ -1445,6 +1476,15 @@ export const ProvinsiDetail = () => {
             );
           })}
         </div>
+      </div>
+
+      {/* ══ SECTION 5: DATA UMUM SATUAN PENDIDIKAN PROVINSI ═════════════════ */}
+      <div className="max-w-7xl mx-auto px-6 sm:px-8 mt-12">
+        <GeneralDataSection
+          data={provinsiGeneralData}
+          title="Data Umum Satuan Pendidikan Provinsi"
+          subtitle={generalDataSubtitle}
+        />
       </div>
 
       {/* Footer */}
