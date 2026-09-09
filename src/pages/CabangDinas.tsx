@@ -1,12 +1,29 @@
-import { useState, useEffect } from "react";
-import { useParams, Navigate, useNavigate, useLocation } from "react-router-dom";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { useParams, Navigate, useNavigate, useLocation, Link } from "react-router-dom";
 import { CABANG_DATA } from "@/types";
 import type { CabangDinasItem } from "@/types";
-import { School as SchoolIcon, Search, MapPin, ArrowRight, ChevronLeft } from "lucide-react";
+import { School as SchoolIcon, Search, MapPin, ArrowRight, ChevronLeft, ChevronDown, X, Eye, Plus, Minus, RotateCcw, Award } from "lucide-react";
+import L from "leaflet";
 import { PemetaanService } from "@/services/pemetaanService";
-import { SulawesiMap } from "@/components/Fragments/SulawesiMap";
-import { GeneralDataSection } from "@/components/Sections/GeneralDataSection";
+import { SulawesiMap, CABDIS_CONFIG } from "@/components/Fragments/SulawesiMap";
+import { CabdisProfileCard } from "@/components/Sections/CabdisProfileCard";
 import { Skeleton } from "@/components/Elements/Skeleton/Skeleton";
+
+const cleanKecamatanName = (nama: string): string => {
+  return (nama || "")
+    .replace(/^(kec\.?|kecamatan)\s+/i, "")
+    .replace(/,\s*kab\..*$/i, "")
+    .trim();
+};
+
+const getJenjangColor = (bentukPendidikan: string): string => {
+  const upper = (bentukPendidikan || "").toUpperCase();
+  if (upper.includes("SMA") || upper.includes("MA")) return "#8b5cf6";
+  if (upper.includes("SMK")) return "#3b82f6";
+  if (upper.includes("SLB")) return "#f59e0b";
+  if (upper.includes("SMTK")) return "#14b8a6";
+  return "#64748b";
+};
 
 export const CabangDinas = ({ slug: propSlug }: { slug?: string }) => {
   const { slug: paramSlug } = useParams();
@@ -34,44 +51,147 @@ export const CabangDinas = ({ slug: propSlug }: { slug?: string }) => {
   // Ekstraksi instan nomor wilayah (1-6) dari slug Cabdis (misal cabdis-2 -> 2)
   const numericId = slug ? parseInt(slug.replace("cabdis-", ""), 10) : null;
 
-  // State untuk data cabang dinas dari API, dengan fallback ke CABANG_DATA statis
-  const [cabangApiData, setCabangApiData] = useState<CabangDinasItem | null>(null);
+  // State untuk data semua cabang dinas dari API, dengan fallback ke CABANG_DATA statis
+  const [cabangList, setCabangList] = useState<CabangDinasItem[]>([]);
+  const currentCabangApi = useMemo(() => {
+    return cabangList.find((c) => c.id === numericId) || null;
+  }, [cabangList, numericId]);
+
   const cabangFallback = numericId ? CABANG_DATA.find((c) => c.id === numericId) : undefined;
 
   // Gunakan data API jika tersedia, fallback ke CABANG_DATA statis
-  const cabangConfig = cabangApiData
+  const cabangConfig = currentCabangApi
     ? {
-        id: cabangApiData.id,
-        name: cabangApiData.nama,
-        kabKotas: cabangApiData.kabupaten_kota ?? cabangFallback?.kabKotas ?? [],
-      }
+      id: currentCabangApi.id,
+      name: currentCabangApi.nama,
+      kabKotas: currentCabangApi.kabupaten_kota ?? cabangFallback?.kabKotas ?? [],
+    }
     : cabangFallback
       ? { id: cabangFallback.id, name: cabangFallback.name, kabKotas: cabangFallback.kabKotas }
       : undefined;
 
   const regionName = queryParams.get("name") || cabangConfig?.name || `Wilayah ${numericId || ""}`;
+  const activeCabdisSlug = slug || `cabdis-${numericId}`;
+  const activeCabdisCfg = CABDIS_CONFIG[activeCabdisSlug] || CABDIS_CONFIG["cabdis-1"];
 
   // Koordinat dari API jika tersedia, otherwise fallback ke CUSTOM_REGIONAL_CONFIGS
-  const CUSTOM_MAP_CENTER: [number, number] | null =
-    (cabangApiData?.map_lat && cabangApiData?.map_lng)
-      ? [cabangApiData.map_lat, cabangApiData.map_lng]
-      : (numericId && CUSTOM_REGIONAL_CONFIGS[numericId]?.center) || null;
+  const CUSTOM_MAP_CENTER: [number, number] | null = useMemo(() => {
+    if (currentCabangApi?.map_lat && currentCabangApi?.map_lng) {
+      const lat = parseFloat(String(currentCabangApi.map_lat));
+      const lng = parseFloat(String(currentCabangApi.map_lng));
+      if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
+        return [lat, lng];
+      }
+    }
+    if (numericId && CUSTOM_REGIONAL_CONFIGS[numericId]?.center) {
+      return CUSTOM_REGIONAL_CONFIGS[numericId].center;
+    }
+    return null;
+  }, [currentCabangApi, numericId]);
 
-  const CUSTOM_MAP_ZOOM: number | null =
-    cabangApiData?.map_zoom
-      ?? (numericId && CUSTOM_REGIONAL_CONFIGS[numericId]?.zoom)
-      ?? null;
+  const CUSTOM_MAP_ZOOM: number | null = useMemo(() => {
+    const rawZoom = currentCabangApi?.map_zoom ?? (numericId && CUSTOM_REGIONAL_CONFIGS[numericId]?.zoom) ?? 8.5;
+    const z = typeof rawZoom === "string" ? parseFloat(rawZoom) : rawZoom;
+    return !isNaN(z) ? z : 8.5;
+  }, [currentCabangApi, numericId]);
 
+  const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [schoolSearch, setSchoolSearch] = useState("");
   const [selectedSchoolForMap, setSelectedSchoolForMap] = useState<any>(null);
+  const [cabdisDropdownOpen, setCabdisDropdownOpen] = useState(false);
+  const [activeJenjangFilter, setActiveJenjangFilter] = useState<string>("semua");
+  const [activeKabupatenFilter, setActiveKabupatenFilter] = useState<string | null>(null);
+  const [activeAkreditasiFilter, setActiveAkreditasiFilter] = useState<string | null>(null);
+  const [leftCollapsed, setLeftCollapsed] = useState(false);
+  const cabdisDropdownRef = useRef<HTMLDivElement>(null);
 
+  const rawSchools = Array.isArray(data?.schools) ? data.schools : [];
+  const filteredSchools = rawSchools.filter((s: any) => {
+    const sKabupaten = (s.kabupaten || "").trim();
+    const matchesKabupaten = !activeKabupatenFilter || sKabupaten.toLowerCase() === activeKabupatenFilter.toLowerCase();
+    const matchesSearch =
+      !schoolSearch ||
+      s.name?.toLowerCase().includes(schoolSearch.toLowerCase()) ||
+      s.kecamatan?.toLowerCase().includes(schoolSearch.toLowerCase()) ||
+      s.kabupaten?.toLowerCase().includes(schoolSearch.toLowerCase()) ||
+      s.npsn?.toLowerCase().includes(schoolSearch.toLowerCase());
+    const rawGrade = String(s.grade || s.bentuk_pendidikan || "").toUpperCase().trim();
+    const matchesJenjang = activeJenjangFilter === "semua" || rawGrade.includes(activeJenjangFilter);
+    const rawAkreditasi = String(s.akreditasi || "").toUpperCase().trim();
+    const matchesAkreditasi = !activeAkreditasiFilter || (() => {
+      if (activeAkreditasiFilter === "LAIN") {
+        return rawAkreditasi !== "A" && rawAkreditasi !== "B" && rawAkreditasi !== "C";
+      }
+      return rawAkreditasi === activeAkreditasiFilter;
+    })();
+    return matchesSearch && matchesJenjang && matchesKabupaten && matchesAkreditasi;
+  });
 
-  // 1. Fetch detailed data when slug changes
+  const handleSelectKabupaten = (kab: string | null) => {
+    setActiveKabupatenFilter(kab);
+    setSelectedSchoolForMap(null);
+    if (!kab) {
+      if (mapInstance && CUSTOM_MAP_CENTER) {
+        try {
+          mapInstance.flyTo(CUSTOM_MAP_CENTER, CUSTOM_MAP_ZOOM ?? 8.5, { duration: 0.8 });
+        } catch (e) {
+          console.warn("Reset view error:", e);
+        }
+      }
+      return;
+    }
+
+    // Filter koordinat sekolah di kabupaten yang dipilih
+    const kabSchools = rawSchools.filter(
+      (s: any) => (s.kabupaten || "").trim().toLowerCase() === kab.toLowerCase()
+    );
+    const validCoords = kabSchools
+      .map((s: any) => ({
+        lat: parseFloat(s.latitude ?? s.lintang),
+        lng: parseFloat(s.longitude ?? s.bujur),
+      }))
+      .filter((c: any) => !isNaN(c.lat) && !isNaN(c.lng) && Math.abs(c.lat) > 0.01 && Math.abs(c.lng) > 0.01);
+
+    if (validCoords.length > 0 && mapInstance) {
+      const avgLat = validCoords.reduce((acc: number, c: any) => acc + c.lat, 0) / validCoords.length;
+      const avgLng = validCoords.reduce((acc: number, c: any) => acc + c.lng, 0) / validCoords.length;
+      try {
+        mapInstance.flyTo([avgLat, avgLng], 9.8, {
+          duration: 0.8,
+          easeLinearity: 0.25,
+        });
+      } catch (e) {
+        console.warn("FlyTo kabupaten error:", e);
+      }
+    }
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (cabdisDropdownRef.current && !cabdisDropdownRef.current.contains(e.target as Node)) {
+        setCabdisDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    const titleWil = numericId ? `Wilayah ${numericId}` : "";
+    document.title = `Cabang Dinas ${titleWil} - Dinas Pendidikan Provinsi Sulawesi Tengah`;
+  }, [numericId]);
+
+  // 1. Fetch detailed data & reset state when slug changes
   useEffect(() => {
     if (slug) {
-      fetchDetail(false);
+      setSelectedSchoolForMap(null);
+      setSchoolSearch("");
+      setActiveKabupatenFilter(null);
+      setActiveJenjangFilter("semua");
+      setActiveAkreditasiFilter(null);
+      fetchDetail();
     }
   }, [slug]);
 
@@ -80,13 +200,12 @@ export const CabangDinas = ({ slug: propSlug }: { slug?: string }) => {
     fetchCabangDinas();
   }, []);
 
-  /** Ambil data cabang dinas dari API pemetaan untuk koordinat & nama akurat */
+  /** Ambil data semua cabang dinas dari API pemetaan */
   const fetchCabangDinas = async () => {
     try {
       const res = await PemetaanService.getCabangDinas();
-      if (res?.data && numericId) {
-        const found = res.data.find((c) => c.id === numericId);
-        if (found) setCabangApiData(found);
+      if (res?.data && Array.isArray(res.data)) {
+        setCabangList(res.data);
       }
     } catch (error) {
       // Fallback ke CABANG_DATA statis sudah ditangani di cabangConfig
@@ -94,7 +213,7 @@ export const CabangDinas = ({ slug: propSlug }: { slug?: string }) => {
     }
   };
 
-  const fetchDetail = async (_includeDetails = false) => {
+  const fetchDetail = async () => {
     setLoading(true);
     try {
       // ✅ Pakai PemetaanService.getRegionDetail — bukan PortalService
@@ -128,7 +247,7 @@ export const CabangDinas = ({ slug: propSlug }: { slug?: string }) => {
   }
 
   return (
-    <div className="relative w-screen h-screen overflow-y-auto font-poppins bg-slate-50/20 scrollbar-hide scroll-smooth">
+    <div className="relative w-screen h-screen overflow-hidden font-poppins bg-slate-50/20 select-none">
 
       {/* Background */}
       <img
@@ -137,33 +256,138 @@ export const CabangDinas = ({ slug: propSlug }: { slug?: string }) => {
         className="fixed inset-0 object-cover w-full h-full opacity-15 pointer-events-none select-none z-0"
       />
 
-      {/* Main */}
-      <main className="w-full min-h-screen relative z-10 overflow-x-hidden flex flex-col items-center">
+      {/* Main Container — Locked to 100vh GIS Command Center */}
+      <main className="w-full h-screen relative z-10 overflow-hidden flex flex-col items-center">
 
-        {/* Logo */}
-        <div className="absolute top-8 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
-          <img src="/logo.png" className="w-[50%]" alt="Logo" />
-        </div>
+        {/* ═══════════════════════════════════════════════════════════════════
+            HEADER RESMI CABANG DINAS (STEP 1)
+        ════════════════════════════════════════════════════════════════════ */}
+        <header className="absolute top-0 inset-x-0 z-40 bg-white/70 backdrop-blur-md border-b border-white/70 shadow-2xs">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between relative">
 
-        {/* Tombol Kembali */}
-        <button
-          onClick={() => navigate("/")}
-          className="absolute top-6 left-6 z-20 flex items-center gap-2 bg-white/80 hover:bg-white border border-white/80 shadow-md rounded-2xl px-3 py-2 text-xs font-bold text-slate-600 hover:text-slate-800 transition-all"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          Kembali
-        </button>
+            {/* Sisi Kiri: Tombol Kembali ke Beranda & Identitas Wilayah */}
+            <div className="flex items-center gap-2.5 z-10">
+              <button
+                onClick={() => navigate("/")}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-700 bg-white/90 border border-slate-200/80 shadow-2xs hover:bg-white hover:border-slate-300 hover:text-blue-700 hover:-translate-y-0.5 active:scale-95 transition-all duration-200 cursor-pointer"
+                title="Kembali ke Beranda Utama"
+              >
+                <ChevronLeft className="w-3.5 h-3.5 text-slate-500" />
+                <span className="hidden sm:inline">Beranda</span>
+              </button>
+
+              <div className="h-4 w-px bg-slate-200 hidden sm:block" />
+
+              {/* Badge Identitas Cabang Dinas Aktif */}
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/80 border border-slate-200/70 shadow-2xs">
+                <span
+                  className="w-2.5 h-2.5 rounded-full shrink-0 shadow-xs ring-2 ring-offset-1"
+                  style={{ background: activeCabdisCfg.color }}
+                />
+                <span className="text-xs font-extrabold text-slate-800">
+                  Wilayah {numericId}
+                </span>
+                <span className="hidden md:inline text-xs text-slate-400 font-medium">
+                  • {activeCabdisCfg.label.split("—")[1]?.trim() || cabangConfig?.name}
+                </span>
+              </div>
+            </div>
+
+            {/* Logo Brand Resmi di Tengah (Proporsional & Sleek) */}
+            <div className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center pointer-events-auto">
+              <Link to="/" title="Berani Cerdas - Dinas Pendidikan Provinsi Sulawesi Tengah">
+                <img
+                  src="/logo.png"
+                  alt="Logo Portal Pemetaan"
+                  className="h-8 object-contain drop-shadow-2xs hover:scale-105 transition-transform duration-200"
+                />
+              </Link>
+            </div>
+
+            {/* Sisi Kanan: Pindah Cepat Wilayah Cabdis & Data Provinsi */}
+            <div className="flex items-center gap-2 z-10">
+              {/* Dropdown Ganti Wilayah Cabdis */}
+              <div className="relative" ref={cabdisDropdownRef}>
+                <button
+                  onClick={() => setCabdisDropdownOpen(!cabdisDropdownOpen)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer hover:-translate-y-0.5 active:scale-95 ${cabdisDropdownOpen
+                      ? "bg-white text-blue-700 shadow-xs border border-blue-200"
+                      : "text-slate-700 bg-white/85 hover:bg-white hover:text-blue-700 border border-slate-200/80 shadow-2xs"
+                    }`}
+                  title="Pindah ke Wilayah Cabang Dinas Lain"
+                >
+                  <span>Pindah Wilayah</span>
+                  <ChevronDown
+                    className={`w-3.5 h-3.5 transition-transform duration-200 ${cabdisDropdownOpen ? "rotate-180 text-blue-600" : "text-slate-400"
+                      }`}
+                  />
+                </button>
+
+                {cabdisDropdownOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-72 rounded-2xl bg-white/95 backdrop-blur-xl border border-slate-200/90 shadow-xl p-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                    <div className="px-3 py-1.5 mb-1 border-b border-slate-100 flex items-center justify-between">
+                      <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">
+                        Pilih Cabang Dinas
+                      </span>
+                      <span className="text-[9px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+                        6 Wilayah
+                      </span>
+                    </div>
+                    <div className="flex flex-col gap-0.5">
+                      {Object.entries(CABDIS_CONFIG).map(([cSlug, cCfg]) => {
+                        const isCurrent = cSlug === activeCabdisSlug;
+                        return (
+                          <button
+                            key={cSlug}
+                            onClick={() => {
+                              setCabdisDropdownOpen(false);
+                              navigate(`/${cSlug}?name=${encodeURIComponent(cCfg.label)}`);
+                            }}
+                            className={`flex items-center gap-2.5 w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all duration-200 group cursor-pointer ${isCurrent
+                                ? "bg-blue-50 text-blue-700"
+                                : "text-slate-700 hover:bg-blue-50/70 hover:text-blue-700 hover:pl-3.5"
+                              }`}
+                          >
+                            <span
+                              className="w-2.5 h-2.5 rounded-full shrink-0 shadow-2xs group-hover:scale-125 transition-transform"
+                              style={{ background: cCfg.color }}
+                            />
+                            <span className="truncate">{cCfg.label}</span>
+                            {isCurrent && (
+                              <span className="ml-auto text-[9px] font-extrabold text-blue-600 bg-white px-1.5 py-0.5 rounded-md border border-blue-200">
+                                Aktif
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <Link
+                to="/provinsi"
+                className="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-700 bg-white/85 hover:bg-white hover:text-blue-700 hover:shadow-xs hover:-translate-y-0.5 active:scale-95 border border-slate-200/80 shadow-2xs transition-all duration-200 hidden sm:inline-flex"
+              >
+                Data Provinsi
+              </Link>
+            </div>
+
+          </div>
+        </header>
 
         {/* Peta Interaktif */}
         <div className="absolute inset-0 z-5 overflow-hidden">
-          <div className="w-full h-full scale-[1.1] flex items-center justify-center">
+          <div className="w-full h-full">
             <SulawesiMap
               layer="interactive"
               onlyShowId={numericId}
               markers={[]}
-              schools={data?.schools || []}
+              schools={filteredSchools}
               customCenter={CUSTOM_MAP_CENTER}
               customZoom={CUSTOM_MAP_ZOOM}
+              onMapReady={setMapInstance}
               onSchoolClick={(school) => {
                 setSchoolSearch(school.name);
                 setSelectedSchoolForMap(school);
@@ -177,167 +401,278 @@ export const CabangDinas = ({ slug: propSlug }: { slug?: string }) => {
           </div>
         </div>
 
-        {/* Layout: Peta (kiri transparan) + Panel Sekolah (kanan) */}
-        <div className="relative z-10 w-full flex flex-col lg:flex-row py-10 px-6 lg:px-10 gap-6 pointer-events-none" style={{ height: "100vh" }}>
+        {/* Layout: Panel Kiri (Profil Cabdis) + Area Peta Tengah + Panel Kanan (Daftar Sekolah) */}
+        <div className="relative z-10 w-full h-full flex flex-col lg:flex-row pt-16 pb-4 px-4 lg:px-6 gap-4 pointer-events-none">
 
-          {/* Kiri: kosong, peta terlihat */}
-          <div className="flex-[3] pointer-events-none" />
+          {/* Sisi Kiri: Panel Profil & Quick Filter Jenjang & Sebaran Wilayah */}
+          <div className={`pointer-events-auto hidden lg:block transition-all duration-300 ${leftCollapsed ? "w-auto" : "w-[300px] xl:w-[325px]"} h-[calc(100vh-5rem)] shrink-0`}>
+            <CabdisProfileCard
+              numericId={numericId}
+              cabdisConfig={activeCabdisCfg}
+              schools={data?.schools || []}
+              summary={data?.summary}
+              activeJenjang={activeJenjangFilter}
+              onSelectJenjang={(j) => setActiveJenjangFilter(j)}
+              activeKabupaten={activeKabupatenFilter}
+              onSelectKabupaten={handleSelectKabupaten}
+              activeAkreditasi={activeAkreditasiFilter}
+              onSelectAkreditasi={(akr) => setActiveAkreditasiFilter(akr)}
+              isCollapsed={leftCollapsed}
+              onToggleCollapse={() => setLeftCollapsed(!leftCollapsed)}
+            />
+          </div>
 
-          {/* Kanan: Panel daftar sekolah */}
-          <div className="flex-[1] pointer-events-auto flex flex-col gap-4 min-h-0">
+          {/* Tengah: Area Peta Interaktif & Floating Navigation HUD */}
+          <div className="flex-1 pointer-events-none flex flex-col justify-end items-start pb-6">
+            <div className="pointer-events-auto flex flex-col gap-1 bg-white/90 backdrop-blur-md p-1.5 rounded-2xl shadow-lg border border-slate-200/90 transition-all duration-200">
+              <button
+                type="button"
+                onClick={() => {
+                  try { mapInstance?.zoomIn(); } catch (e) { console.warn(e); }
+                }}
+                className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-700 hover:text-blue-700 hover:bg-blue-50 active:scale-90 transition-all cursor-pointer"
+                title="Perbesar Peta (+)"
+                aria-label="Zoom In"
+              >
+                <Plus className="w-4 h-4 stroke-[2.5]" />
+              </button>
 
-              {/* Panel Header */}
-              <div className="bg-white/80 backdrop-blur-md border border-white/80 shadow-lg rounded-[1.8rem] px-5 py-4 shrink-0">
-                <div className="flex items-center gap-3 mb-1">
-                  <div className="w-1 h-5 rounded-full bg-blue-600 shrink-0" />
-                  <div>
-                    <p className="font-black text-sm text-slate-800">Sekolah</p>
-                    <p className="text-xs text-slate-400 font-medium">Daftar Sekolah {regionName}</p>
+              <div className="h-px w-5 bg-slate-200/80 mx-auto" />
+
+              <button
+                type="button"
+                onClick={() => {
+                  try { mapInstance?.zoomOut(); } catch (e) { console.warn(e); }
+                }}
+                className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-700 hover:text-blue-700 hover:bg-blue-50 active:scale-90 transition-all cursor-pointer"
+                title="Perkecil Peta (-)"
+                aria-label="Zoom Out"
+              >
+                <Minus className="w-4 h-4 stroke-[2.5]" />
+              </button>
+
+              {CUSTOM_MAP_CENTER && (
+                <>
+                  <div className="h-px w-5 bg-slate-200/80 mx-auto" />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (mapInstance && CUSTOM_MAP_CENTER) {
+                        try {
+                          mapInstance.flyTo(CUSTOM_MAP_CENTER, CUSTOM_MAP_ZOOM ?? 8.5, {
+                            duration: 0.8,
+                            easeLinearity: 0.25,
+                          });
+                        } catch (e) {
+                          console.warn("Reset view error:", e);
+                        }
+                      }
+                    }}
+                    className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-700 hover:text-blue-700 hover:bg-blue-50 active:scale-90 transition-all cursor-pointer"
+                    title="Reset Tampilan Wilayah"
+                    aria-label="Reset View"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5 stroke-[2.5]" />
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Sisi Kanan: Panel Daftar Sekolah */}
+          <div className="w-full lg:w-[320px] xl:w-[350px] pointer-events-auto flex flex-col gap-2.5 h-[calc(100vh-5rem)] min-h-0 shrink-0">
+
+            {/* Panel Header Seragam Kabupaten & Provinsi */}
+            <div className="bg-white/95 backdrop-blur-md border border-slate-200/90 shadow-sm rounded-2xl p-3.5 shrink-0">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                <div className="border-l-4 pl-3 border-blue-600">
+                  <div className="font-bold text-sm text-slate-800">Daftar Sekolah &amp; Lembaga</div>
+                  <div className="text-[11px] text-slate-400 font-medium">
+                    Satuan Pendidikan {regionName}
                   </div>
                 </div>
-
-                {/* Search */}
-                <div className="relative mt-3">
-                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-300" />
-                  <input
-                    type="text"
-                    placeholder="Cari sekolah..."
-                    value={schoolSearch}
-                    onChange={(e) => setSchoolSearch(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-2.5 pl-10 pr-4 text-xs font-semibold placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:bg-white transition-all"
-                  />
-                </div>
-
-                {/* Counter */}
-                <p className="text-[10px] text-slate-400 font-semibold mt-2 px-1">
-                  {data?.schools?.filter((s: any) =>
-                    s.name?.toLowerCase().includes(schoolSearch.toLowerCase())
-                  ).length ?? 0} sekolah ditemukan
-                </p>
               </div>
 
-              {/* Daftar Sekolah — flex-1 + overflow-y-auto = scroll dalam panel */}
-              <div className="flex-1 overflow-y-auto flex flex-col gap-2.5 scrollbar-hide min-h-0">
-
-                {(data?.schools?.filter((s: any) =>
-                  s.name?.toLowerCase().includes(schoolSearch.toLowerCase())
-                ) ?? []).length === 0 && !loading && (
-                  <div className="py-10 text-center text-xs font-bold text-slate-400 uppercase tracking-widest bg-white/60 backdrop-blur-sm rounded-[1.5rem] border border-white/60">
-                    Tidak ada sekolah ditemukan
-                  </div>
+              {/* Search */}
+              <div className="relative mt-3">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Cari nama sekolah atau kecamatan..."
+                  value={schoolSearch}
+                  onChange={(e) => setSchoolSearch(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-2 pl-9 pr-8 text-xs font-semibold placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:bg-white transition-all"
+                />
+                {schoolSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setSchoolSearch("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                    title="Hapus pencarian"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
                 )}
+              </div>
 
-                {(data?.schools ?? [])
-                  .filter((s: any) =>
-                    s.name?.toLowerCase().includes(schoolSearch.toLowerCase())
-                  )
-                  .map((school: any) => {
-                    const jenjang = school.grade ?? "";
-                    const isSelected = selectedSchoolForMap?.id === school.id;
+              {/* Counter & Filter Status */}
+              <div className="flex items-center justify-between flex-wrap gap-1 mt-2.5 px-1">
+                <p className="text-[10px] text-slate-500 font-semibold">
+                  Menampilkan <span className="font-bold text-blue-600">{filteredSchools.length}</span> sekolah
+                </p>
+                <div className="flex items-center flex-wrap gap-1">
+                  {activeKabupatenFilter && (
+                    <button
+                      type="button"
+                      onClick={() => handleSelectKabupaten(null)}
+                      className="flex items-center gap-1 text-[10px] font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded-md transition-colors cursor-pointer"
+                      title="Hapus filter kabupaten"
+                    >
+                      <MapPin className="w-2.5 h-2.5" />
+                      <span>{activeKabupatenFilter}</span>
+                      <X className="w-2.5 h-2.5" />
+                    </button>
+                  )}
+                  {activeJenjangFilter !== "semua" && (
+                    <button
+                      type="button"
+                      onClick={() => setActiveJenjangFilter("semua")}
+                      className="flex items-center gap-1 text-[10px] font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded-md transition-colors cursor-pointer"
+                      title="Hapus filter jenjang"
+                    >
+                      <span>Jenjang: {activeJenjangFilter}</span>
+                      <X className="w-2.5 h-2.5" />
+                    </button>
+                  )}
+                  {activeAkreditasiFilter && (
+                    <button
+                      type="button"
+                      onClick={() => setActiveAkreditasiFilter(null)}
+                      className="flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-md transition-colors cursor-pointer"
+                      title="Hapus filter akreditasi"
+                    >
+                      <Award className="w-2.5 h-2.5 text-amber-600" />
+                      <span>Akreditasi {activeAkreditasiFilter === "LAIN" ? "Lainnya" : activeAkreditasiFilter}</span>
+                      <X className="w-2.5 h-2.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
 
-                    const JENJANG_COLOR: Record<string, { bg: string; text: string; dot: string }> = {
-                      SMA:  { bg: "bg-purple-50",  text: "text-purple-700",  dot: "#8b5cf6" },
-                      SMK:  { bg: "bg-pink-50",    text: "text-pink-700",    dot: "#ec4899" },
-                      SLB:  { bg: "bg-red-50",     text: "text-red-700",     dot: "#ef4444" },
-                      MA:   { bg: "bg-indigo-50",  text: "text-indigo-700",  dot: "#6366f1" },
-                      SMTK: { bg: "bg-teal-50",    text: "text-teal-700",    dot: "#14b8a6" },
-                    };
-                    const jCfg = JENJANG_COLOR[jenjang];
-                    const dotColor = jCfg?.dot ?? "#64748b";
+            {/* Daftar Sekolah — flex-1 + overflow-y-auto = scroll dalam panel */}
+            <div className="flex-1 overflow-y-auto flex flex-col gap-2.5 scrollbar-hide min-h-0">
 
-                    return (
+              {filteredSchools.length === 0 && !loading && (
+                <div className="py-12 text-center text-xs font-bold text-slate-400 uppercase tracking-widest bg-white/70 backdrop-blur-sm rounded-2xl border border-white/80 shadow-2xs">
+                  Tidak ada sekolah cocok
+                </div>
+              )}
+
+              {filteredSchools.map((school: any, idx: number) => {
+                const jenjang = school.grade ?? school.bentuk_pendidikan ?? "";
+                const color = getJenjangColor(jenjang);
+                const isActive = selectedSchoolForMap?.id === school.id || selectedSchoolForMap?.npsn === school.npsn;
+                const hasCoordinates = Boolean(school.latitude && school.longitude);
+                const cleanKec = cleanKecamatanName(school.kecamatan ?? "");
+                const key = school.npsn ? `${school.npsn}-${idx}` : `s-${idx}`;
+
+                return (
+                  <div
+                    key={key}
+                    onClick={() => {
+                      if (hasCoordinates) {
+                        setSelectedSchoolForMap(school);
+                      }
+                    }}
+                    className={`bg-white rounded-2xl p-3.5 border shadow-2xs cursor-pointer transition-all hover:shadow-md hover:-translate-y-0.5 shrink-0 ${isActive
+                        ? "border-blue-500 bg-blue-50/40 ring-2 ring-blue-500/20"
+                        : "border-slate-100 hover:border-blue-200"
+                      }`}
+                  >
+                    <div className="flex items-start gap-2.5">
                       <div
-                        key={school.id}
-                        className={`bg-white/90 backdrop-blur-sm rounded-[1.5rem] p-3.5 border shadow-sm transition-all ${
-                          isSelected
-                            ? "border-blue-300 shadow-blue-100"
-                            : "border-white/80 hover:border-slate-200 hover:shadow-md"
-                        }`}
+                        className="w-8 h-8 rounded-xl flex items-center justify-center text-[10px] font-black shrink-0 mt-0.5 shadow-xs"
+                        style={{ background: `${color}18`, color: color }}
                       >
-                        {/* Nama + jenjang */}
-                        <div className="flex items-start gap-2.5 mb-3">
-                          <div
-                            className="w-7 h-7 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
-                            style={{ background: dotColor + "20", color: dotColor }}
-                          >
-                            <SchoolIcon className="w-3.5 h-3.5" />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-xs font-bold text-slate-800 leading-snug line-clamp-2">
-                              {school.name}
-                            </p>
-                            <div className="flex items-center gap-1.5 mt-1">
-                              <span className={`text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-lg ${jCfg?.bg ?? "bg-slate-100"} ${jCfg?.text ?? "text-slate-600"}`}>
-                                {jenjang || "—"}
-                              </span>
-                              <span className="text-[9px] font-semibold text-slate-400 uppercase">
-                                {school.status}
-                              </span>
-                            </div>
-                          </div>
-                          <div
-                            className="w-2 h-2 rounded-full shrink-0 mt-1.5"
-                            style={{ background: dotColor }}
-                          />
-                        </div>
+                        {jenjang.substring(0, 3)}
+                      </div>
 
-                        {/* Kecamatan */}
-                        {school.kecamatan && (
-                          <div className="flex items-center gap-1.5 mb-3 px-0.5">
-                            <MapPin className="w-3 h-3 text-slate-300 shrink-0" />
-                            <span className="text-[10px] text-slate-400 font-semibold truncate">
-                              {school.kecamatan}
-                            </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-black text-slate-800 leading-snug line-clamp-1">
+                          {school.name}
+                        </p>
+                        <div className="flex items-center gap-1.5 mt-1 text-[10px] text-slate-500 font-medium">
+                          <span
+                            className="font-bold px-1.5 py-0.2 rounded text-[9px]"
+                            style={{ background: `${color}15`, color: color }}
+                          >
+                            {jenjang}
+                          </span>
+                          <span>•</span>
+                          <span>{school.status ?? "—"}</span>
+                          <span>•</span>
+                          <span className="truncate">Kec. {cleanKec || "—"}</span>
+                        </div>
+                        {school.kabupaten && (
+                          <div className="flex items-center gap-1 mt-1 text-[9.5px] font-semibold text-slate-500">
+                            <MapPin className="w-2.5 h-2.5 text-blue-500 shrink-0" />
+                            <span className="truncate">{school.kabupaten}</span>
                           </div>
                         )}
-
-                        {/* Tombol aksi */}
-                        <div className="grid grid-cols-2 gap-2">
-                          <button
-                            onClick={() => {
-                              if (school.latitude && school.longitude) {
-                                setSchoolSearch(school.name);
-                                setSelectedSchoolForMap(school);
-                              }
-                            }}
-                            className={`flex items-center justify-center gap-1.5 py-2 rounded-xl text-[9px] font-black uppercase tracking-wider border transition-all ${
-                              school.latitude && school.longitude
-                                ? "bg-blue-50 hover:bg-blue-100 text-blue-600 border-blue-100"
-                                : "bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed"
-                            }`}
-                            disabled={!school.latitude || !school.longitude}
-                            title={!school.latitude || !school.longitude ? "Koordinat belum tersedia" : ""}
-                          >
-                            <MapPin className="w-3 h-3" />
-                            Lokasi
-                          </button>
-
-                          <button
-                            onClick={() => {
-                              if (school.npsn) navigate(`/sekolah/${school.npsn}`);
-                            }}
-                            className="flex items-center justify-center gap-1.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-[9px] font-black uppercase tracking-wider border border-slate-700 transition-all"
-                          >
-                            <ArrowRight className="w-3 h-3" />
-                            Detail
-                          </button>
-                        </div>
                       </div>
-                    );
-                  })}
-              </div>
+
+                      <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase shrink-0 ${school.akreditasi === "A"
+                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                          : school.akreditasi === "B"
+                            ? "bg-blue-50 text-blue-700 border border-blue-200"
+                            : school.akreditasi === "C"
+                              ? "bg-amber-50 text-amber-700 border border-amber-200"
+                              : "bg-slate-100 text-slate-400 border border-slate-200"
+                        }`}>
+                        {school.akreditasi ?? "—"}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 mt-3 pt-2.5 border-t border-slate-100">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (hasCoordinates) {
+                            setSelectedSchoolForMap(school);
+                          }
+                        }}
+                        disabled={!hasCoordinates}
+                        className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all cursor-pointer ${hasCoordinates
+                            ? "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200"
+                            : "bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed"
+                          }`}
+                      >
+                        <MapPin className="w-3 h-3" />
+                        <span>Lokasi</span>
+                      </button>
+
+                      <Link
+                        to={`/sekolah/${school.npsn}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 text-[10px] font-black uppercase tracking-wider border border-blue-200/80 transition-all text-center cursor-pointer"
+                      >
+                        <Eye className="w-3 h-3" />
+                        <span>Detail</span>
+                      </Link>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
 
-        {/* Section Data Umum */}
-        <div className="relative z-10 w-full px-6 lg:px-10 pb-10 pointer-events-auto">
-          <GeneralDataSection data={data?.summary} />
-
-          <footer className="mt-6 text-center opacity-50">
-            <p className="text-xs text-slate-500">
-              &copy; 2026 BLPT - Dinas Pendidikan Provinsi Sulawesi Tengah
-            </p>
-          </footer>
+        {/* Sleek Minimal GIS Footer Pill (Non-intrusive) */}
+        <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 z-20 pointer-events-none flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/80 backdrop-blur-md border border-slate-200/70 shadow-2xs text-[10px] text-slate-500 font-semibold">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span>&copy; 2026 BLPT - Dinas Pendidikan Provinsi Sulawesi Tengah</span>
         </div>
 
       </main>

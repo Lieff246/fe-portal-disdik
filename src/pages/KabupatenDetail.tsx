@@ -28,6 +28,7 @@ import { PemetaanService } from "@/services/pemetaanService";
 import { AdminService } from "@/services/adminService";
 import { useAuth } from "@/contexts/AuthContext";
 import { DeleteConfirmModal } from "@/components/Admin/DeleteConfirmModal";
+import { createSchoolPopupHtml } from "@/utils/schoolPopup";
 import type { SekolahMarker, StatistikKabupatenItem } from "@/types";
 
 // ─── Mapping kode kabupaten → nama file GeoJSON kecamatan ────────────────────
@@ -133,89 +134,7 @@ const createMarkerIcon = (bentukPendidikan: string, dimmed = false) => {
 };
 
 // ─── Modern Minimalist Popup HTML ─────────────────────────────────────────────
-const createPopupHtml = (s: SekolahMarker) => {
-  const jenjang = s.bentuk_pendidikan ?? "";
-  const color = getJenjangColor(jenjang);
-  const cleanKec = cleanKecamatanName(s.kecamatan ?? "");
-  const status = s.status_sekolah || "—";
-  const npsn = s.npsn || "—";
-  const akr = s.akreditasi?.toUpperCase() || null;
-
-  const akrBadge = akr === "A"
-    ? '<span style="display:inline-flex;align-items:center;gap:4px;background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;padding:3px 9px;border-radius:8px;font-size:10px;font-weight:800;"><span style="color:#059669;font-size:11px;">★</span> Akreditasi A</span>'
-    : akr === "B"
-      ? '<span style="display:inline-flex;align-items:center;gap:4px;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;padding:3px 9px;border-radius:8px;font-size:10px;font-weight:800;"><span style="color:#2563eb;font-size:11px;">★</span> Akreditasi B</span>'
-      : akr === "C"
-        ? '<span style="display:inline-flex;align-items:center;gap:4px;background:#fffbeb;color:#b45309;border:1px solid #fde68a;padding:3px 9px;border-radius:8px;font-size:10px;font-weight:800;"><span style="color:#d97706;font-size:11px;">★</span> Akreditasi C</span>'
-        : '<span style="display:inline-flex;align-items:center;gap:4px;background:#f8fafc;color:#64748b;border:1px solid #e2e8f0;padding:3px 9px;border-radius:8px;font-size:10px;font-weight:700;">Belum Terakreditasi</span>';
-
-  const lat = parseFloat(String(s.lintang || "0"));
-  const lng = parseFloat(String(s.bujur || "0"));
-  const gmapsUrl = (lat && lng && !isNaN(lat) && !isNaN(lng))
-    ? `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`
-    : null;
-
-  return `
-    <div style="font-family:'Poppins',system-ui,sans-serif;border-radius:20px;overflow:hidden;background:#ffffff;box-shadow:0 20px 40px -15px rgba(15,23,42,0.22);pointer-events:auto;">
-      
-      <!-- Top Header with subtle tint -->
-      <div style="background:linear-gradient(135deg, ${color}16, ${color}05);border-bottom:1px solid ${color}22;padding:14px 16px 12px;">
-        <div style="display:flex;align-items:flex-start;gap:10px;">
-          <div style="width:34px;height:34px;border-radius:12px;background:${color}25;color:${color};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;flex-shrink:0;border:1px solid ${color}35;box-shadow:0 2px 6px ${color}15;">
-            ${jenjang.substring(0, 3)}
-          </div>
-          <div style="flex:1;min-width:0;padding-right:10px;">
-            <h3 style="font-size:12.5px;font-weight:900;color:#0f172a;margin:0;line-height:1.35;word-break:break-word;">
-              ${s.nama}
-            </h3>
-            <div style="display:flex;align-items:center;gap:5px;margin-top:3px;flex-wrap:wrap;">
-              <span style="font-size:9.5px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;">
-                ${jenjang} · ${status}
-              </span>
-              <span style="font-size:8px;color:#cbd5e1;">•</span>
-              <span style="font-size:9px;color:#94a3b8;font-family:monospace;font-weight:600;background:#ffffff;padding:1px 5px;border-radius:4px;border:1px solid #e2e8f0;">
-                NPSN ${npsn}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Body Section -->
-      <div style="padding:12px 16px 14px;background:#ffffff;">
-        
-        <!-- Location -->
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">
-          <p style="font-size:11px;color:#475569;font-weight:600;margin:0;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-            Kec. ${cleanKec || '—'}
-          </p>
-        </div>
-
-        <!-- Badges Row -->
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;flex-wrap:wrap;">
-          ${akrBadge}
-        </div>
-
-        <!-- Primary Action Button -->
-        <a href="/sekolah/${s.npsn}" style="display:flex;align-items:center;justify-content:center;gap:6px;background:linear-gradient(135deg, #2563eb, #4f46e5);color:#ffffff;border-radius:12px;padding:8px 12px;text-decoration:none;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:0.05em;box-shadow:0 4px 12px rgba(37,99,235,0.25);transition:all 0.2s;cursor:pointer;">
-          <span>Lihat Detail Sekolah</span>
-          <span style="font-size:12px;font-weight:900;">→</span>
-        </a>
-
-        <!-- Secondary Action: Directions -->
-        ${gmapsUrl ? `
-          <div style="text-align:center;margin-top:8px;">
-            <a href="${gmapsUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:4px;font-size:9.5px;color:#64748b;text-decoration:none;font-weight:700;">
-              <span>Buka Rute di Google Maps</span>
-              <span style="font-size:9px;color:#94a3b8;">↗</span>
-            </a>
-          </div>
-        ` : ''}
-
-      </div>
-    </div>
-  `;
-};
+const createPopupHtml = (s: SekolahMarker) => createSchoolPopupHtml(s);
 
 // ─── Sub-component: Optimized Marker Cluster Map Layer ────────────────────────
 const MarkerClusterMapLayer = ({
@@ -274,7 +193,7 @@ const MarkerClusterMapLayer = ({
       const marker = L.marker([lat, lng], { icon });
 
       marker.bindPopup(() => createPopupHtml(school), {
-        maxWidth: 280,
+        maxWidth: 300,
         minWidth: 250,
         offset: [0, -5],
         className: "custom-school-popup",
@@ -1514,37 +1433,6 @@ export const KabupatenDetail = () => {
         .leaflet-container { background: transparent !important; }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-
-        .custom-school-popup .leaflet-popup-content-wrapper {
-          border-radius: 20px !important;
-          padding: 0 !important;
-          overflow: hidden !important;
-          box-shadow: 0 25px 50px -12px rgba(15,23,42,0.3) !important;
-          border: 1px solid rgba(255,255,255,0.9) !important;
-          background: #ffffff !important;
-        }
-        .custom-school-popup .leaflet-popup-content {
-          margin: 0 !important;
-          width: 260px !important;
-        }
-        .custom-school-popup .leaflet-popup-tip-container { display: none !important; }
-        .custom-school-popup .leaflet-popup-close-button {
-          color: #94a3b8 !important;
-          font-size: 16px !important;
-          top: 10px !important;
-          right: 10px !important;
-          z-index: 20;
-          width: 22px !important;
-          height: 22px !important;
-          border-radius: 50% !important;
-          display: flex !important;
-          align-items: center !important;
-          justify-content: center !important;
-        }
-        .custom-school-popup .leaflet-popup-close-button:hover {
-          background: #f1f5f9 !important;
-          color: #0f172a !important;
-        }
 
         .marker-cluster {
           background-clip: padding-box;

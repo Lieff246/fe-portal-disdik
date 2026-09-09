@@ -4,6 +4,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { useNavigate } from "react-router-dom";
 import indonesiaGeoData from "@/assets/geojson/indonesia-provinces.json";
+import { createSchoolPopupHtml } from "@/utils/schoolPopup";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface MapProps {
@@ -20,6 +21,7 @@ interface MapProps {
   externalActiveKode?: string | null;
   onKabupatenSelect?: (kode: string | null) => void;
   onKabupatenHover?: (kode: string | null) => void;
+  onMapReady?: (map: L.Map) => void;
   /** @deprecated pakai kabupatenStats */
   markers?: any[];
   /** @deprecated */
@@ -94,19 +96,60 @@ const getKabupatenIcon = (color: string, isActive: boolean) => {
   return ICON_CACHE[key];
 };
 
-const schoolNegeriIcon = L.divIcon({
-  html: `<div style="background:#2563eb;width:10px;height:10px;border-radius:50%;border:2px solid white;box-shadow:0 0 4px rgba(0,0,0,.3)"></div>`,
-  className: "",
-  iconSize: [10, 10],
-  iconAnchor: [5, 5],
-});
+const createJenjangSchoolIcon = (jenjang: string, isSelected = false) => {
+  const upper = (jenjang || "").toUpperCase();
+  let color = "#64748b";
+  if (upper.includes("SMA") || upper.includes("MA")) color = "#8b5cf6";
+  else if (upper.includes("SMK")) color = "#3b82f6";
+  else if (upper.includes("SLB")) color = "#f59e0b";
+  else if (upper.includes("SMTK")) color = "#14b8a6";
 
-const schoolSwastaIcon = L.divIcon({
-  html: `<div style="background:#10b981;width:10px;height:10px;border-radius:50%;border:2px solid white;box-shadow:0 0 4px rgba(0,0,0,.3)"></div>`,
-  className: "",
-  iconSize: [10, 10],
-  iconAnchor: [5, 5],
-});
+  const size = isSelected ? 15 : 10;
+  return L.divIcon({
+    className: "",
+    html: `<div style="position:relative;display:flex;align-items:center;justify-content:center;">
+      ${isSelected ? `<div style="position:absolute;width:28px;height:28px;border-radius:50%;background:${color}44;animation:ping 1.3s cubic-bezier(0,0,0.2,1) infinite;"></div>` : ""}
+      <div style="width:${size}px;height:${size}px;border-radius:50%;background:${color};border:2px solid white;box-shadow:0 2px 7px rgba(0,0,0,0.38);transition:all 0.2s;"></div>
+    </div>`,
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    popupAnchor: [0, -size / 2 - 4],
+  });
+};
+
+// ─── Sub-component: FlyTo saat sekolah dipilih di Cabdis ──────────────────────
+const FlyToSelectedSchool = ({ selectedSchool }: { selectedSchool: any }) => {
+  const map = useMap();
+  useEffect(() => {
+    if (!selectedSchool) return;
+    const lat = parseFloat(selectedSchool.latitude ?? selectedSchool.lintang);
+    const lng = parseFloat(selectedSchool.longitude ?? selectedSchool.bujur);
+    if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
+      try {
+        map.flyTo([lat, lng], Math.max(map.getZoom(), 13), {
+          duration: 0.8,
+          easeLinearity: 0.25,
+        });
+      } catch (e) {
+        console.warn("FlyTo error:", e);
+      }
+    }
+  }, [selectedSchool, map]);
+  return null;
+};
+
+// ─── Sub-component: Capture map instance ────────────────────────────────────
+const MapReadyHandler = ({ onMapReady }: { onMapReady?: (map: L.Map) => void }) => {
+  const map = useMap();
+  const calledRef = useRef(false);
+  useEffect(() => {
+    if (onMapReady && !calledRef.current) {
+      calledRef.current = true;
+      onMapReady(map);
+    }
+  }, [map, onMapReady]);
+  return null;
+};
 
 // ─── Sub-component: sync center/zoom ─────────────────────────────────────────
 const ChangeMapView = ({ center, zoom }: { center: [number, number]; zoom: number }) => {
@@ -116,7 +159,11 @@ const ChangeMapView = ({ center, zoom }: { center: [number, number]; zoom: numbe
     const key = `${center[0]},${center[1]},${zoom}`;
     if (key !== prev.current) {
       prev.current = key;
-      map.setView(center, zoom, { animate: true });
+      try {
+        map.setView(center, zoom, { animate: true });
+      } catch (e) {
+        console.warn("ChangeMapView error:", e);
+      }
     }
   }, [center, zoom, map]);
   return null;
@@ -228,6 +275,7 @@ export const SulawesiMap: React.FC<MapProps> = ({
   externalActiveKode,
   onKabupatenSelect,
   onKabupatenHover,
+  onMapReady,
 }) => {
   const navigate = useNavigate();
   const [cabdisGeoData, setCabdisGeoData] = useState<Record<number, any>>({});
@@ -299,8 +347,12 @@ export const SulawesiMap: React.FC<MapProps> = ({
     }
   });
 
-  const mapCenter: [number, number] = customCenter ?? [-2.9, 121.5];
-  const mapZoom   = customZoom ?? 7.5;
+  const mapCenter: [number, number] = (customCenter && !isNaN(parseFloat(String(customCenter[0]))) && !isNaN(parseFloat(String(customCenter[1]))))
+    ? [parseFloat(String(customCenter[0])), parseFloat(String(customCenter[1]))]
+    : [-2.9, 121.5];
+  const mapZoom: number = (customZoom && !isNaN(parseFloat(String(customZoom))))
+    ? parseFloat(String(customZoom))
+    : 7.5;
   const isInteractive = !!onlyShowId;
 
   // Styles
@@ -346,18 +398,22 @@ export const SulawesiMap: React.FC<MapProps> = ({
         key={`map-${mapCenter[0]}-${mapCenter[1]}-${mapZoom}`}
         center={mapCenter}
         zoom={mapZoom}
-        zoomSnap={0.1}
-        zoomDelta={0.1}
-        zoomControl={isInteractive && !!onlyShowId}
+        minZoom={6}
+        maxZoom={18}
+        zoomSnap={0.25}
+        zoomDelta={0.5}
+        zoomControl={false}
         dragging={onlyShowId ? true : false}
-        scrollWheelZoom={false}
-        doubleClickZoom={false}
-        boxZoom={false}
+        scrollWheelZoom={onlyShowId ? true : false}
+        doubleClickZoom={onlyShowId ? true : false}
+        touchZoom={onlyShowId ? true : false}
+        boxZoom={onlyShowId ? true : false}
         attributionControl={false}
         style={{ width: "100%", height: "100%", background: "transparent" }}
       >
+        <MapReadyHandler onMapReady={onMapReady} />
         <ChangeMapView center={mapCenter} zoom={mapZoom} />
-        <PanToActiveKabupaten activeKode={activeKode} defaultCenter={mapCenter} />
+        {!onlyShowId && <PanToActiveKabupaten activeKode={activeKode} defaultCenter={mapCenter} />}
 
         {/* ── BASE: Peta Indonesia abu-abu ── */}
         {layer === "base" && (
@@ -512,44 +568,76 @@ export const SulawesiMap: React.FC<MapProps> = ({
               </Popup>
             )}
 
-            {/* ━━━ SCHOOL MARKERS — halaman cabdis ━━━ */}
-            {onlyShowId && schools.map((school: any) => {
-              const lat = parseFloat(school.latitude ?? school.lintang);
-              const lng = parseFloat(school.longitude ?? school.bujur);
-              if (!lat || !lng || isNaN(lat) || isNaN(lng)) return null;
-              const isSwasta = school.name?.toUpperCase().includes("SWASTA") ||
-                school.status_sekolah === "Swasta";
-              return (
-                <Marker
-                  key={school.id ?? school.npsn}
-                  position={[lat, lng]}
-                  icon={isSwasta ? schoolSwastaIcon : schoolNegeriIcon}
-                  eventHandlers={{ click: () => onSchoolClick?.(school) }}
-                >
-                  <Tooltip direction="top" offset={[0, -4]}>
-                    <span className="font-bold text-[10px] text-slate-800">
-                      {school.name ?? school.nama}
-                    </span>
-                  </Tooltip>
-                </Marker>
-              );
-            })}
+            {/* ━━━ SCHOOL MARKERS & FLYTO — halaman cabdis ━━━ */}
+            {onlyShowId && (
+              <>
+                <FlyToSelectedSchool selectedSchool={selectedSchool} />
 
-            {/* Popup sekolah yang dipilih */}
-            {onlyShowId && selectedSchool && (
-              <Popup
-                position={[
-                  parseFloat(selectedSchool.latitude ?? selectedSchool.lintang),
-                  parseFloat(selectedSchool.longitude ?? selectedSchool.bujur),
-                ]}
-                eventHandlers={{ remove: () => onPopupClose?.() }}
-              >
-                <div className="px-2 py-1.5 flex flex-col gap-0.5 text-slate-800 font-poppins">
-                  <p className="text-[9px] font-black text-blue-600 uppercase tracking-wider mb-0.5">Sekolah Aktif</p>
-                  <p className="text-xs font-bold uppercase leading-snug">{selectedSchool.name ?? selectedSchool.nama}</p>
-                  <p className="text-[9px] text-slate-400 font-bold mt-0.5">NPSN: {selectedSchool.npsn ?? "—"}</p>
-                </div>
-              </Popup>
+                <React.Fragment key={`schools-layer-${onlyShowId}`}>
+                  {schools.map((school: any, idx: number) => {
+                    const lat = parseFloat(school.latitude ?? school.lintang);
+                    const lng = parseFloat(school.longitude ?? school.bujur);
+                    if (!lat || !lng || isNaN(lat) || isNaN(lng)) return null;
+
+                    // Abaikan koordinat dummy / invalid (0, 0 atau mendekati nol)
+                    if (Math.abs(lat) < 0.01 || Math.abs(lng) < 0.01) return null;
+
+                    const jenjang = school.grade ?? school.bentuk_pendidikan ?? "SMA";
+                    const isSelected = (selectedSchool?.id === school.id) || (selectedSchool?.npsn === school.npsn);
+
+                    return (
+                      <Marker
+                        key={`school-${onlyShowId}-${school.npsn || school.id || idx}-${idx}`}
+                        position={[lat, lng]}
+                        icon={createJenjangSchoolIcon(jenjang, isSelected)}
+                        eventHandlers={{ click: () => onSchoolClick?.(school) }}
+                      >
+                        <Tooltip direction="top" offset={[0, -6]}>
+                          <div className="font-poppins text-center py-0.5 max-w-[200px]">
+                            <span className="font-bold text-[10.5px] text-slate-900 block leading-tight truncate">
+                              {school.name ?? school.nama}
+                            </span>
+                            <span className="text-[9px] text-slate-500 font-medium mt-0.5 block">
+                              {jenjang} • {school.status ?? school.status_sekolah ?? "—"}
+                            </span>
+                            {school.kabupaten && (
+                              <span className="text-[8.5px] text-blue-600 font-semibold block mt-0.5 truncate">
+                                {school.kabupaten}
+                              </span>
+                            )}
+                          </div>
+                        </Tooltip>
+                      </Marker>
+                    );
+                  })}
+                </React.Fragment>
+
+                {/* Popup sekolah yang dipilih (Unified Standard Popup) */}
+                {selectedSchool && (() => {
+                  const rawLat = selectedSchool.latitude ?? selectedSchool.lintang;
+                  const rawLng = selectedSchool.longitude ?? selectedSchool.bujur;
+                  const lat = parseFloat(String(rawLat ?? "0"));
+                  const lng = parseFloat(String(rawLng ?? "0"));
+                  if (isNaN(lat) || isNaN(lng) || Math.abs(lat) < 0.01 || Math.abs(lng) < 0.01) return null;
+
+                  return (
+                    <Popup
+                      position={[lat, lng]}
+                      eventHandlers={{ remove: () => onPopupClose?.() }}
+                      offset={[0, -6]}
+                      className="custom-school-popup"
+                      maxWidth={300}
+                      minWidth={250}
+                    >
+                      <div
+                        dangerouslySetInnerHTML={{
+                          __html: createSchoolPopupHtml(selectedSchool),
+                        }}
+                      />
+                    </Popup>
+                  );
+                })()}
+              </>
             )}
           </>
         )}

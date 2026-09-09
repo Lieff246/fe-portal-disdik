@@ -3,6 +3,8 @@ import { School, LayoutGrid, Users, GraduationCap, UserCog, Briefcase } from "lu
 
 interface Props {
   data: any;
+  title?: string;
+  subtitle?: string;
 }
 
 const METRIC_CONFIG = [
@@ -66,7 +68,11 @@ const METRIC_CONFIG = [
   },
 ];
 
-export const GeneralDataSection: React.FC<Props> = ({ data }) => {
+export const GeneralDataSection: React.FC<Props> = ({
+  data,
+  title = "Data Umum Satuan Pendidikan",
+  subtitle,
+}) => {
   return (
     <section className="w-full">
       <div className="rounded-[2rem] bg-white/85 backdrop-blur-md border border-white/80 shadow-[0_20px_60px_-20px_rgba(15,23,42,0.15)] px-6 py-5">
@@ -74,9 +80,14 @@ export const GeneralDataSection: React.FC<Props> = ({ data }) => {
         {/* Header */}
         <div className="flex items-center gap-3 mb-5">
           <div className="w-1 h-5 rounded-full bg-blue-500 shrink-0" />
-          <h2 className="text-sm font-extrabold text-slate-800 tracking-tight">
-            Data Umum Satuan Pendidikan
-          </h2>
+          <div>
+            <h2 className="text-sm font-extrabold text-slate-800 tracking-tight">
+              {title}
+            </h2>
+            {subtitle && (
+              <p className="text-xs text-slate-400 font-medium">{subtitle}</p>
+            )}
+          </div>
           {data?.semester_id && (
             <span className="ml-auto text-[10px] font-bold text-slate-400 uppercase tracking-widest">
               Semester {data.semester_id}

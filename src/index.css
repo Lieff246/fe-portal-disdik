@@ -163,3 +163,41 @@
 .custom-region-tooltip::before {
   border-top-color: rgba(15, 23, 42, 0.92) !important;
 }
+
+/* ── Unified Leaflet School Popup Styling (Cabdis, Provinsi, Kabupaten) ── */
+.custom-school-popup .leaflet-popup-content-wrapper {
+  border-radius: 18px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  box-shadow: 0 20px 45px -12px rgba(15, 23, 42, 0.22) !important;
+  border: 1px solid rgba(226, 232, 240, 0.9) !important;
+  background: #ffffff !important;
+}
+.custom-school-popup .leaflet-popup-content {
+  margin: 0 !important;
+  line-height: normal !important;
+}
+.custom-school-popup .leaflet-popup-tip-container {
+  display: none !important;
+}
+.custom-school-popup .leaflet-popup-close-button {
+  color: #94a3b8 !important;
+  font-size: 16px !important;
+  top: 9px !important;
+  right: 9px !important;
+  z-index: 30 !important;
+  width: 22px !important;
+  height: 22px !important;
+  border-radius: 50% !important;
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.15s ease !important;
+}
+.custom-school-popup .leaflet-popup-close-button:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}

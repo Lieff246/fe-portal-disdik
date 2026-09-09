@@ -28,6 +28,7 @@ import {
 import { PemetaanService } from "@/services/pemetaanService";
 import { AdminService } from "@/services/adminService";
 import { useAuth } from "@/contexts/AuthContext";
+import { createSchoolPopupHtml } from "@/utils/schoolPopup";
 import { DeleteConfirmModal } from "@/components/Admin/DeleteConfirmModal";
 import type { SekolahMarker } from "@/types";
 
@@ -113,48 +114,7 @@ const createMarkerIcon = (bentukPendidikan: string, dimmed = false) => {
   });
 };
 
-const createPopupHtml = (s: SekolahMarker) => {
-  const jenjang = s.bentuk_pendidikan ?? "";
-  const color = getJenjangColor(jenjang);
-  const kab = s.kabupaten ?? "—";
-  const status = s.status_sekolah || "—";
-  const npsn = s.npsn || "—";
-  const akr = s.akreditasi?.toUpperCase() || null;
-
-  const akrBadge = akr === "A"
-    ? '<span style="display:inline-flex;align-items:center;gap:4px;background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:800;">Akreditasi A</span>'
-    : akr === "B"
-      ? '<span style="display:inline-flex;align-items:center;gap:4px;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:800;">Akreditasi B</span>'
-      : akr === "C"
-        ? '<span style="display:inline-flex;align-items:center;gap:4px;background:#fffbeb;color:#b45309;border:1px solid #fde68a;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:800;">Akreditasi C</span>'
-        : '<span style="display:inline-flex;align-items:center;gap:4px;background:#f8fafc;color:#64748b;border:1px solid #e2e8f0;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;">Belum Terakreditasi</span>';
-
-  return `
-    <div style="font-family:'Poppins',sans-serif;padding:12px;min-width:230px;max-width:280px;background:#fff;border-radius:14px;">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-        <span style="background:${color}18;color:${color};font-size:10px;font-weight:900;padding:2px 7px;border-radius:6px;text-transform:uppercase;">
-          ${jenjang}
-        </span>
-        <span style="font-size:10px;font-weight:700;color:#64748b;">${status}</span>
-        <span style="margin-left:auto;">${akrBadge}</span>
-      </div>
-      <h3 style="font-size:13px;font-weight:900;color:#0f172a;line-height:1.3;margin:0 0 4px 0;">
-        ${s.nama}
-      </h3>
-      <p style="font-size:10px;color:#64748b;margin:0 0 10px 0;line-height:1.4;">
-        ${s.alamat_jalan ? `${s.alamat_jalan}, ` : ''}${kab}
-      </p>
-      <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #f1f5f9;padding-top:8px;">
-        <span style="font-size:10px;font-weight:700;color:#94a3b8;">NPSN: ${npsn}</span>
-        ${s.npsn ? `
-          <a href="/sekolah/${s.npsn}" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:800;color:#2563eb;text-decoration:none;">
-            Detail →
-          </a>
-        ` : ''}
-      </div>
-    </div>
-  `;
-};
+const createPopupHtml = (s: SekolahMarker) => createSchoolPopupHtml(s);
 
 // ─── Centroid 13 Kabupaten/Kota Sulawesi Tengah ─────────────────────────────
 const KABUPATEN_CENTROIDS: Record<string, { lat: number; lng: number; nama: string }> = {
@@ -293,8 +253,8 @@ const MarkerClusterMapLayer = ({
       const marker = L.marker([lat, lng], { icon });
 
       marker.bindPopup(() => createPopupHtml(school), {
-        maxWidth: 290,
-        minWidth: 240,
+        maxWidth: 300,
+        minWidth: 250,
         offset: [0, -5],
         className: "custom-school-popup",
         autoPan: true,
