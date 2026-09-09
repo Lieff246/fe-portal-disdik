@@ -1,4 +1,5 @@
 import { Home } from '@/pages/Home';
+import HomeV2 from '@/pages/HomeV2';
 import { CabangDinas } from '@/pages/CabangDinas';
 import About from '@/pages/About';
 import { KabupatenDetail } from '@/pages/KabupatenDetail';
@@ -9,6 +10,14 @@ import { ProvinsiDetail } from '@/pages/ProvinsiDetail';
 const landingRoutes = [
   {
     path: '',
+    element: <HomeV2 />,
+  },
+  {
+    path: 'beranda-v2',
+    element: <HomeV2 />,
+  },
+  {
+    path: 'beranda-lama',
     element: <Home />,
   },
   {

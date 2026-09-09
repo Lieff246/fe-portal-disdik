@@ -16,6 +16,10 @@ interface MapProps {
   customCenter?: [number, number] | null;
   customZoom?: number | null;
   selectedSchool?: any;
+  externalHoveredKode?: string | null;
+  externalActiveKode?: string | null;
+  onKabupatenSelect?: (kode: string | null) => void;
+  onKabupatenHover?: (kode: string | null) => void;
   /** @deprecated pakai kabupatenStats */
   markers?: any[];
   /** @deprecated */
@@ -220,12 +224,19 @@ export const SulawesiMap: React.FC<MapProps> = ({
   customCenter = null,
   customZoom = null,
   selectedSchool,
+  externalHoveredKode,
+  externalActiveKode,
+  onKabupatenSelect,
+  onKabupatenHover,
 }) => {
   const navigate = useNavigate();
   const [cabdisGeoData, setCabdisGeoData] = useState<Record<number, any>>({});
   const [sultengGeo, setSultengGeo]       = useState<any>(null);
-  const [activeKode, setActiveKode]       = useState<string | null>(null);
-  const [hoveredKode, setHoveredKode]     = useState<string | null>(null);
+  const [internalActiveKode, setInternalActiveKode]   = useState<string | null>(null);
+  const [internalHoveredKode, setInternalHoveredKode] = useState<string | null>(null);
+
+  const activeKode  = externalActiveKode  !== undefined ? externalActiveKode  : internalActiveKode;
+  const hoveredKode = externalHoveredKode !== undefined ? externalHoveredKode : internalHoveredKode;
 
   useEffect(() => {
     // 1. Peta Sulawesi Tengah per kabupaten — hanya untuk dashboard utama
@@ -298,20 +309,30 @@ export const SulawesiMap: React.FC<MapProps> = ({
 
   // Handlers
   const handleSelect = useCallback((kode: string) => {
-    setActiveKode(prev => prev === kode ? null : kode);
-  }, []);
+    const next = activeKode === kode ? null : kode;
+    if (externalActiveKode === undefined) {
+      setInternalActiveKode(next);
+    }
+    onKabupatenSelect?.(next);
+  }, [activeKode, externalActiveKode, onKabupatenSelect]);
 
   const handleHover = useCallback((kode: string | null) => {
-    setHoveredKode(kode);
-  }, []);
+    if (externalHoveredKode === undefined) {
+      setInternalHoveredKode(kode);
+    }
+    onKabupatenHover?.(kode);
+  }, [externalHoveredKode, onKabupatenHover]);
 
   const navigateToKabupaten = (kode: string) => {
     navigate(`/kabupaten/${kode}`);
   };
 
   const handlePopupClose = useCallback(() => {
-    setActiveKode(null);
-  }, []);
+    if (externalActiveKode === undefined) {
+      setInternalActiveKode(null);
+    }
+    onKabupatenSelect?.(null);
+  }, [externalActiveKode, onKabupatenSelect]);
 
   // Data untuk popup kabupaten aktif
   const activeKabData = activeKode ? KABUPATEN_CENTROIDS[activeKode] : null;
@@ -378,12 +399,13 @@ export const SulawesiMap: React.FC<MapProps> = ({
             {!onlyShowId && Object.entries(KABUPATEN_CENTROIDS).map(([kode, centroid]) => {
               const color    = CABDIS_CONFIG[centroid.slug]?.color ?? "#2563eb";
               const isActive = activeKode === kode;
+              const isHovered = hoveredKode === kode;
               return (
                 <Marker
                   key={`kab-${kode}`}
                   position={centroid as L.LatLngExpression}
-                  icon={getKabupatenIcon(color, isActive)}
-                  zIndexOffset={isActive ? 1000 : 0}
+                  icon={getKabupatenIcon(color, isActive || isHovered)}
+                  zIndexOffset={isActive || isHovered ? 1000 : 0}
                   eventHandlers={{
                     click: () => handleSelect(kode),
                   }}
@@ -412,7 +434,7 @@ export const SulawesiMap: React.FC<MapProps> = ({
                 minWidth={230}
                 maxWidth={270}
                 className="kab-popup"
-                closeButton={false}
+                closeButton={true}
                 eventHandlers={{
                   remove: handlePopupClose,
                 }}

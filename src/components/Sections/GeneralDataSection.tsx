@@ -96,16 +96,16 @@ export const GeneralDataSection: React.FC<Props> = ({ data }) => {
               return (
                 <div
                   key={m.key}
-                  className={`flex flex-col gap-3 rounded-[1.4rem] bg-gradient-to-br ${m.gradient} shadow-lg ${m.shadow} px-4 py-4`}
+                  className={`group flex flex-col gap-3 rounded-[1.4rem] bg-gradient-to-br ${m.gradient} shadow-lg ${m.shadow} px-4 py-4 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl hover:scale-[1.02] cursor-default`}
                 >
-                  <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6 shadow-2xs">
                     <Icon className="w-5 h-5 text-white" />
                   </div>
                   <div>
                     <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-blue-100 leading-none mb-1">
                       {m.label}
                     </p>
-                    <p className="text-2xl font-black text-white leading-tight">
+                    <p className="text-2xl font-black text-white leading-tight tabular-nums">
                       {value.toLocaleString("id-ID")}
                     </p>
                   </div>
@@ -117,16 +117,16 @@ export const GeneralDataSection: React.FC<Props> = ({ data }) => {
             return (
               <div
                 key={m.key}
-                className={`flex flex-col gap-3 rounded-[1.4rem] border ${m.border} ${m.bg} px-4 py-4 transition-all hover:-translate-y-0.5 hover:shadow-md`}
+                className={`group flex flex-col gap-3 rounded-[1.4rem] border ${m.border} ${m.bg} px-4 py-4 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg hover:border-slate-300/80 hover:bg-white cursor-default`}
               >
-                <div className={`w-10 h-10 rounded-xl ${m.iconBg} flex items-center justify-center ${m.iconColor}`}>
+                <div className={`w-10 h-10 rounded-xl ${m.iconBg} flex items-center justify-center ${m.iconColor} transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6 shadow-2xs`}>
                   <Icon className="w-5 h-5" />
                 </div>
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400 leading-none mb-1">
                     {m.label}
                   </p>
-                  <p className={`text-xl font-black leading-tight ${isZero ? "text-slate-300" : "text-slate-900"}`}>
+                  <p className={`text-xl font-black leading-tight tabular-nums transition-transform duration-200 origin-left group-hover:scale-[1.03] ${isZero ? "text-slate-300" : "text-slate-900"}`}>
                     {value.toLocaleString("id-ID")}
                   </p>
                   {isZero && (
