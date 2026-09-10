@@ -270,13 +270,12 @@ export const PortalCardSectionV2: React.FC<PortalDataCardsProps> = ({
               onMouseEnter={() => bpsCode && onHoverKabupaten?.(bpsCode)}
               onMouseLeave={() => onHoverKabupaten?.(null)}
               onClick={() => bpsCode && onSelectKabupaten?.(isItemActive ? null : bpsCode)}
-              className={`group relative flex flex-col gap-2.5 rounded-2xl border p-3.5 transition-all duration-300 ease-out cursor-pointer ${
-                isItemActive
-                  ? "border-blue-500 bg-blue-50/70 ring-4 ring-blue-400/25 shadow-lg -translate-y-1"
-                  : isItemHovered
+              className={`group relative flex flex-col gap-2.5 rounded-2xl border p-3.5 transition-all duration-300 ease-out cursor-pointer ${isItemActive
+                ? "border-blue-500 bg-blue-50/70 ring-4 ring-blue-400/25 shadow-lg -translate-y-1"
+                : isItemHovered
                   ? "border-blue-400 bg-white ring-2 ring-blue-200/60 shadow-md -translate-y-1"
                   : "border-slate-200/80 bg-white/90 hover:bg-white hover:border-blue-300 hover:shadow-[0_12px_28px_-8px_rgba(37,99,235,0.18)] hover:-translate-y-1"
-              }`}
+                }`}
             >
               {/* Header Item */}
               <div className="flex items-center gap-3">
@@ -307,7 +306,7 @@ export const PortalCardSectionV2: React.FC<PortalDataCardsProps> = ({
                   </h4>
                   <p className="text-[10px] text-slate-500 font-semibold mt-0.5">
                     {(item.total_paud_smp ?? 0).toLocaleString("id-ID")}{" "}
-                    <span className="text-slate-400 font-normal">Sekolah PAUD-SMP</span>
+                    <span className="text-[10px] text-slate-500 font-medium mt-0.5">Sekolah PAUD-SMP</span>
                   </p>
                 </div>
               </div>

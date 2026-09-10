@@ -191,7 +191,7 @@ export const ProyeksiCardV2: React.FC<ProyeksiCardV2Props> = ({
               Dinas Pendidikan Prov. Sulteng
             </h4>
             <p className="text-[10px] text-slate-500 font-medium mt-0.5">
-              Kelola {totalSekolah.toLocaleString("id-ID")} Satuan Pendidikan Menengah
+              Menaungi {totalSekolah.toLocaleString("id-ID")} Sekolah (SMA, SMK, & SLB)
             </p>
           </div>
         </div>
@@ -210,11 +210,10 @@ export const ProyeksiCardV2: React.FC<ProyeksiCardV2Props> = ({
                 key={j.key}
                 onMouseEnter={() => setHoveredJenjangKey(j.key)}
                 onMouseLeave={() => setHoveredJenjangKey(null)}
-                className={`group flex items-center justify-between rounded-xl border px-3 py-2 transition-all duration-200 cursor-pointer ${
-                  isHovered
-                    ? "border-purple-300 bg-white shadow-md -translate-y-0.5 scale-[1.015] ring-2 ring-purple-100"
-                    : `border ${j.borderClass} bg-gradient-to-r ${j.bgClass} shadow-2xs hover:shadow-sm hover:-translate-y-0.5 hover:bg-white`
-                }`}
+                className={`group flex items-center justify-between rounded-xl border px-3 py-2 transition-all duration-200 cursor-pointer ${isHovered
+                  ? "border-purple-300 bg-white shadow-md -translate-y-0.5 scale-[1.015] ring-2 ring-purple-100"
+                  : `border ${j.borderClass} bg-gradient-to-r ${j.bgClass} shadow-2xs hover:shadow-sm hover:-translate-y-0.5 hover:bg-white`
+                  }`}
               >
                 <div className="flex items-center gap-2">
                   <div
@@ -232,11 +231,10 @@ export const ProyeksiCardV2: React.FC<ProyeksiCardV2Props> = ({
                     </p>
                   </div>
                 </div>
-                <span className={`rounded-lg px-2.5 py-0.5 text-xs font-black border transition-all duration-200 tabular-nums ${
-                  isHovered
-                    ? "bg-purple-600 text-white border-purple-600 shadow-xs scale-105"
-                    : "bg-white/90 text-slate-800 border-slate-200/80 shadow-2xs group-hover:border-purple-200"
-                }`}>
+                <span className={`rounded-lg px-2.5 py-0.5 text-xs font-black border transition-all duration-200 tabular-nums ${isHovered
+                  ? "bg-purple-600 text-white border-purple-600 shadow-xs scale-105"
+                  : "bg-white/90 text-slate-800 border-slate-200/80 shadow-2xs group-hover:border-purple-200"
+                  }`}>
                   {total.toLocaleString("id-ID")}
                 </span>
               </div>
@@ -320,16 +318,14 @@ export const ProyeksiCardV2: React.FC<ProyeksiCardV2Props> = ({
                   key={j.key}
                   onMouseEnter={() => setHoveredJenjangKey(j.key)}
                   onMouseLeave={() => setHoveredJenjangKey(null)}
-                  className={`flex items-center gap-1.5 text-[10px] px-1.5 py-0.5 rounded-md transition-all duration-150 cursor-pointer ${
-                    isHovered
-                      ? "bg-purple-50 font-bold text-purple-900 scale-105"
-                      : "text-slate-600 hover:text-slate-900"
-                  }`}
+                  className={`flex items-center gap-1.5 text-[10px] px-1.5 py-0.5 rounded-md transition-all duration-150 cursor-pointer ${isHovered
+                    ? "bg-purple-50 font-bold text-purple-900 scale-105"
+                    : "text-slate-600 hover:text-slate-900"
+                    }`}
                 >
                   <span
-                    className={`w-2 h-2 rounded-full ${j.dot} shrink-0 transition-transform duration-200 ${
-                      isHovered ? "scale-125 ring-2 ring-purple-300" : ""
-                    }`}
+                    className={`w-2 h-2 rounded-full ${j.dot} shrink-0 transition-transform duration-200 ${isHovered ? "scale-125 ring-2 ring-purple-300" : ""
+                      }`}
                   />
                   <span className="truncate">{j.label}</span>
                   <span className="font-extrabold text-slate-800 ml-auto tabular-nums">
