@@ -1,7 +1,6 @@
 import { Home } from '@/pages/Home';
 import HomeV2 from '@/pages/HomeV2';
 import { CabangDinas } from '@/pages/CabangDinas';
-import About from '@/pages/About';
 import { KabupatenDetail } from '@/pages/KabupatenDetail';
 import { KabupatenDetailOld } from '@/pages/KabupatenDetailOld';
 import { SekolahDetail } from '@/pages/SekolahDetail';
@@ -59,10 +58,6 @@ const landingRoutes = [
   {
     path: 'sekolah/:npsn',
     element: <SekolahDetail />,
-  },
-  {
-    path: 'about',
-    element: <About />,
   },
 ];
 
