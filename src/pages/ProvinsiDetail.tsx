@@ -207,35 +207,23 @@ const MarkerClusterMapLayer = ({
     if (!map) return;
 
     const cluster = (L as any).markerClusterGroup({
-      maxClusterRadius: 40,
-      spiderfyOnMaxZoom: true,
+      maxClusterRadius: 35,
+      disableClusteringAtZoom: 14,
       showCoverageOnHover: false,
-      zoomToBoundsOnClick: true,
-      disableClusteringAtZoom: 15,
+      spiderfyOnMaxZoom: true,
       chunkedLoading: true,
       chunkInterval: 50,
-      chunkDelay: 20,
+      chunkDelay: 10,
       removeOutsideVisibleBounds: true,
       iconCreateFunction: (c: any) => {
         const count = c.getChildCount();
+        let sizeClass = "small";
+        if (count > 50) sizeClass = "large";
+        else if (count > 15) sizeClass = "medium";
         return L.divIcon({
-          html: `<div style="
-            width: 36px; height: 36px; border-radius: 50%;
-            background: rgba(37, 99, 235, 0.25);
-            backdrop-filter: blur(4px);
-            border: 2px solid #ffffff;
-            display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
-          "><div style="
-            width: 26px; height: 26px; border-radius: 50%;
-            background: #2563eb; color: #ffffff;
-            font-weight: 800; font-size: 11px;
-            display: flex; align-items: center; justify-content: center;
-            font-family: 'Poppins', sans-serif;
-          ">${count}</div></div>`,
-          className: "",
+          html: `<div><span>${count}</span></div>`,
+          className: `marker-cluster marker-cluster-${sizeClass}`,
           iconSize: [36, 36],
-          iconAnchor: [18, 18],
         });
       },
     });
@@ -547,7 +535,7 @@ export const ProvinsiDetail = () => {
     if (!lat || !lng || isNaN(lat) || isNaN(lng) || !mapRef.current) return;
 
     setSelectedSchool(school);
-    mapRef.current.flyTo([lat, lng], 16, { animate: true, duration: 1.2 });
+    mapRef.current.flyTo([lat, lng], 16, { animate: true, duration: 1 });
 
     setTimeout(() => {
       const marker = markerMapRef.current[school.npsn];
@@ -558,7 +546,7 @@ export const ProvinsiDetail = () => {
       } else if (marker) {
         marker.openPopup();
       }
-    }, 850);
+    }, 750);
   }, []);
 
   // ── Fly to Kabupaten ──────────────────────────────────────────────────────
@@ -1507,6 +1495,33 @@ export const ProvinsiDetail = () => {
         .leaflet-container { background: transparent !important; }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Cluster Marker Modern */
+        .marker-cluster {
+          background-clip: padding-box;
+          border-radius: 50%;
+          display: flex !important;
+          align-items: center;
+          justify-content: center;
+        }
+        .marker-cluster div {
+          width: 28px;
+          height: 28px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-family: inherit;
+          font-size: 11px;
+          font-weight: 800;
+          color: #ffffff;
+        }
+        .marker-cluster-small  { background-color: rgba(59,130,246,0.25); }
+        .marker-cluster-small div  { background-color: rgba(37,99,235,0.9); box-shadow: 0 2px 6px rgba(37,99,235,0.4); }
+        .marker-cluster-medium { background-color: rgba(99,102,241,0.25); }
+        .marker-cluster-medium div { background-color: rgba(79,70,229,0.9); box-shadow: 0 2px 6px rgba(79,70,229,0.4); }
+        .marker-cluster-large  { background-color: rgba(139,92,246,0.25); }
+        .marker-cluster-large div  { background-color: rgba(109,40,217,0.9); box-shadow: 0 2px 6px rgba(109,40,217,0.4); }
       `}</style>
     </div>
   );
